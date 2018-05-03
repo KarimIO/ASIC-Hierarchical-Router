@@ -1,5 +1,5 @@
 #include <iostream>
-#include "Grid.hpp"
+#include "Grid.h"
 
 #include<sstream>
 #include"Def.h"
@@ -60,9 +60,6 @@ bool Parse()
 	}
 	print();
 
-#ifdef _WIN32
-	system("pause");
-#endif
 	return 0;
 }
 
