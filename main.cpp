@@ -1,8 +1,9 @@
 #include <iostream>
-#include "Grid.h"
+#include <sstream>
+#include <vector>
+#include "GridLees.h"
+#include "Def.h"
 
-#include<sstream>
-#include"Def.h"
 using namespace std;
 struct Rect{
 	string pin;
@@ -138,6 +139,7 @@ bool extractLEF(string lef_file)
 	}
 	return true;
 }
+
 void print()
 {
 	cout << "\n\n-------------------------SIZES--------------------\n";
@@ -158,19 +160,22 @@ void print()
 }
 
 int main() {
-    Grid grid(10, 8);
-    grid.setStart(2, 1);
-    grid.setEnd(6, 5);
+    GridLees grid(10, 8);
+	grid.addPath(Path(Coord(2, 1), Coord(6, 5)));
+	grid.addPath(Path(2, 2, 6, 5));
 
-    grid.setBlock(4, 4);
-    grid.setBlock(4, 5);
-    grid.setBlock(4, 6);
-    grid.setBlock(5, 4);
-    grid.setBlock(6, 4);
+	std::vector<Coord> blocks;
+	blocks.emplace_back(4, 4);
+    blocks.emplace_back(4, 5);
+    blocks.emplace_back(4, 6);
+    blocks.emplace_back(5, 4);
+    blocks.emplace_back(6, 4);
+
+	grid.setBlockers(blocks.size(), blocks.data());
 
     grid.simulate();
 
-    Parse();
+    //Parse();
 
 #ifdef _WIN32
 	system("pause");
