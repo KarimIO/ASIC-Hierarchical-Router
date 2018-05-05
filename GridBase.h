@@ -17,12 +17,17 @@ struct Coord {
 };
 
 struct Path {
+	unsigned int priority;
+
 	Coord start;
 	Coord end;
-	Path() {}
+	Path() {
+		priority = 0;
+	}
 	Path(Coord s, Coord e) {
 		start = s;
 		end = e;
+		priority = 0;
 	}
 	Path(int xs, int ys, int xe, int ye) {
 		start.x = xs;
@@ -30,6 +35,8 @@ struct Path {
 
 		end.x = xe;
 		end.y = ye;
+
+		priority = 0;
 	}
 };
 

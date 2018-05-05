@@ -9,6 +9,7 @@ typedef int Cell;
 const Cell CELL_PIN		= -1;
 const Cell CELL_EMPTY	= -2;
 const Cell CELL_BLOCK	= -3;
+const Cell CELL_WIRE_BLOCK = -4;
 
 class GridLees {
 public:
@@ -51,7 +52,9 @@ private:
 	std::string printSymbol(Cell val);
 	bool checkCell(int x, int y, Check check);
 	bool checkValue(Cell val);
-	void calculatePath();
+	bool calculatePath();
 	void clear();
-	void clear(std::queue<CellID> &q);
+	void clearQueue(std::queue<CellID> &q);
+	void clearTempBlockers();
+	void sortPaths();
 };

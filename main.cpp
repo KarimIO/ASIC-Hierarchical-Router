@@ -161,8 +161,9 @@ void print()
 
 int main() {
     GridLees grid(10, 8);
-	grid.addPath(Path(Coord(2, 1), Coord(6, 5)));
-	grid.addPath(Path(2, 2, 6, 5));
+	grid.addPath(Path(Coord(2, 1), Coord(5, 5)));
+	grid.addPath(Path(2, 3, 7, 5));
+	//grid.addPath(Path(2, 2, 7, 5));
 
 	std::vector<Coord> blocks;
 	blocks.emplace_back(4, 4);
