@@ -11,8 +11,103 @@ struct Rect{
 };
 map<string, pair<float, float> > gates_size;
 map<string, vector<Rect> > gates_pins;
+
 void print();
 bool extractLEF(string lef_file);
+
+void gridmaker(Def d){
+	//sanity check
+	int x1 = d.diearea_x1;
+	int y1 = d.diearea_y1;
+	int x2 = d.diearea_x2;
+	int y2 = d.diearea_y2;
+	int xsize = (x2-x1)/100;
+	int ysize = (y2-y1)/100;
+	cout<<xsize<<" "<<ysize<<endl;
+	int pinx1,pinx2,piny1,piny2;
+	int gatew,gateh;
+    int pinX,pinY;
+	GridLees grid(xsize,ysize);
+	DefPin p = d.pinlist[0];
+	cout<<p.placed_pos[0]<<endl;
+	DefNet n = d.netlist[0];
+	DefComponent c;
+	//cout<<n.gate_to_pin<<endl;
+	Tracks metal1 = d.tracklist[0];
+	cout<<metal1.name<<endl;
+	cout<<metal1.pos<<endl;
+	//grid.addtracks(metal1.name,metal1.pos,metal1.step);
+
+	cout<<"checking my values"<<endl;
+	//using john's print function to get pin values 
+		cout << "\n\n-------------------------SIZES--------------------\n";
+
+	map<string,string> name_to_gate;
+	map<string, vector<pair<int,int> > > net_pins;
+	for(auto c:d.complist){
+		name_to_gate[c.name]=c.gate;
+	}
+	for(auto net:d.netlist)
+	{
+		vector<pair<int,int> > vp;
+		net_pins[net.name]=vp;
+		for(auto g:net.gate_to_pin)
+		{
+			string gname = name_to_gate[g.first];
+			for(auto it2: gates_pins[gname])
+			{
+				if(it2.pin==g.second)
+				{
+					pinx1 = it2.x1*10;
+					piny1 = it2.y1*10;
+					pinx2 = it2.x2*10;
+					piny2 = it2.y2*10;
+					pinX = pinx1+pinx2 / 2; 
+					pinY = piny1+piny2 / 2;
+					net_pins[net.name].push_back(make_pair(pinX,pinY));
+					break;
+				}
+			}
+		}
+	}
+	for(auto np:net_pins)
+	{
+		for(int i=0;i<np.second.size()-1;i++)
+		{
+			grid.addPath(Path(Coord(np.second[i].first,np.second[i].second), Coord(np.second[i+1].first,np.second[i+1].second)));
+	    grid.simulate();
+
+		}
+	}
+	   // grid.simulate();
+
+	// for (auto it : gates_size)
+	// {
+	// 	cout << "Gate: " << it.first << " w=" << it.second.first << " h=" << it.second.second << endl;
+
+	// }
+	// for (auto it : gates_pins)
+	// {
+	// 	cout << "Gate: " << it.first << endl;
+
+	// 	for (auto it2 : it.second)
+	// 	{
+	// 		pinx1 = it2.x1*10;
+	// 		piny1 = it2.y1*10;
+	// 		pinx2 = it2.x2*10;
+	// 		piny2 = it2.y2*10;
+	// 		pinX = pinx1+pinx2 / 2; 
+	// 		pinY = piny1+piny2 / 2;
+
+	// 		grid.addPath(Path(Coord(2, 1), Coord(6, 5)));
+
+	// 		//cout<<<<endl;
+	// 		cout << "Pin " << it2.pin << " x1=" << pinx1 << " y1=" << piny1 << " x2=" << pinx2 << " y2=" << piny2 << endl;
+	// 	}
+	// 	cout << endl;
+	// }
+	
+}
 
 bool Parse()
 {
@@ -20,7 +115,7 @@ bool Parse()
 	Def d;
 	d.parse("Files/simple_pic_unroute.def");
 
-	Tracks t;
+	/*Tracks t;
 	t.name = "test";
 	t.pos = "444";
 	t._do = "100";
@@ -52,7 +147,7 @@ bool Parse()
 	tn.routes.push_back(tr);
 	tn.gate_to_pin.push_back(make_pair("tst_gate", "A"));
 	d.netlist.push_back(tn);
-
+*/
 	//d.write("Files/test.def");
 
 	//get the gates width and heigh from the lef file
@@ -60,7 +155,8 @@ bool Parse()
 		cerr << "Couldn' get info from lef file\n";
 	}
 	print();
-
+	
+	gridmaker(d);
 	return 0;
 }
 
@@ -175,7 +271,7 @@ int main() {
 
     grid.simulate();
 
-    //Parse();
+	Parse();
 
 #ifdef _WIN32
 	system("pause");

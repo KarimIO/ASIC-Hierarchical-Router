@@ -219,7 +219,7 @@ void GridLees::simulate() {
 			std::cout << "\n";
 		}
 
-		int timeout = 80;
+		int timeout = 500;
 
 		start_ = paths_[i].start;
 		end_ = paths_[i].end;

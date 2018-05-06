@@ -19,6 +19,7 @@ public:
 	void addPath(int xs, int ys, int xe, int ye);
 	void addPath(Coord start, Coord end);
 	void addPath(Path path);
+	//void addtracks(string ori,string start, string step);
     void simulate();
 private:
     Cell *grid_;
