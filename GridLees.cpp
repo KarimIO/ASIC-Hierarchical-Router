@@ -4,6 +4,7 @@
 #include <string>
 #include <iomanip>
 #include <algorithm>
+#include <cmath>
 
 const bool DEBUG_PATH = false;
 double path_size;
@@ -250,6 +251,23 @@ double getPathValue(Path &i) {
 
 bool compare(Path &i, Path &j) { return getPathValue(i) < getPathValue(j); }
 
+double slope(Path &p) {
+    return (p.start.y - p.end.y) / (p.start.x - p.end.x);
+}
+
+unsigned int GridLees::heuristicSlope(unsigned int id) {
+    double a = slope(paths_[id]);
+    double b = 0;
+
+    unsigned int min_slope_id = 0;
+    
+    for (int i = 1; i < paths_.size(); ++i) {
+        double b = slope(paths_[i]);
+    }
+
+    return min_slope_id;
+}
+
 void GridLees::sortPaths() {
 	std::sort(paths_.begin(), paths_.end(), compare);
 
@@ -258,74 +276,82 @@ void GridLees::sortPaths() {
 	}
 }
 
-void GridLees::simulate() {
+bool GridLees::routeWire(Path &wire) {
+    int timeout = 80;
+
+    start_ = wire.start;
+    end_ = wire.end;
+    grid_[start_.y * width_ + start_.x] = 0;
+
+    std::cout << "Plotting path from (" << start_.x << ", " << start_.y << ") to (" << end_.x << ", " << end_.y << ")\n";
+
+    visiting_.emplace(start_.x, start_.y, 0);
+
+    // Wait for timeout, in case of bugs
+    while (visiting_.size() > 0 && simulateStep() && --timeout > 0);
+
+    if (visiting_.size() == 0) {
+        std::cout << "Could not find path to end!\n";
+    }
+    else if (timeout == 0) {
+        std::cout << "Timeout! Failed to find end in time.\n";
+    }
+    else {
+        std::cout << "Found End! Tacking...\n";
+
+        clearQueue(visiting_);
+        
+        if (!calculatePath()) {
+            return false;
+        }
+    }
+
+    grid_[start_.y * width_ + start_.x] = CELL_PIN;
+
+    clearQueue(visiting_);
+    clear();
+}
+
+void GridLees::rip(unsigned int wire) {
+    Path p = paths_[wire];
+    paths_.erase(paths_.begin() + 1);
+    paths_.push_back(p);
+}
+
+bool GridLees::route() {
 	bool finished = false;
 	bool status;
 
-<<<<<<< HEAD
-		int timeout = 500;
-=======
-	for (int i = 0; i < paths_.size() && !finished; ++i) {
-		sortPaths();
-		for (int j = 0; j < paths_.size() && !finished; ++j) {
-			status = false;
-			int timeout = 80;
->>>>>>> 2d54cceed2447fb2c6d5d82edeca7ae33efdd702
+    // Sort routes by uler distance
+	sortPaths();
 
-			start_ = paths_[j].start;
-			end_ = paths_[j].end;
-			grid_[start_.y * width_ + start_.x] = 0;
+    // Try Routing
+    for (int i = 0; i < paths_.size(); ++i) {
+        // Try to route the wire
+        status = routeWire(paths_[i]);
 
-			std::cout << "Plotting path from (" << start_.x << ", " << start_.y << ") to (" << end_.x << ", " << end_.y << ")\n";
+        // If I route it successfully
+        if (status) {
 
-			visiting_.emplace(start_.x, start_.y, 0);
+            // Check if it's the final route
+            if (i == paths_.size() - 1)
+                finished = true;
+        }
+        // Else, try reroute
+        else {
+            unsigned int id = heuristicSlope(i);
+            rip(id);
 
-			// Wait for timeout, in case of bugs
-			while (visiting_.size() > 0 && simulateStep() && --timeout > 0);
-
-			/*if (!DEBUG_PATH) {
-				printGrid();
-			}*/
-
-			if (visiting_.size() == 0) {
-				std::cout << "Could not find path to end!\n";
-			}
-			else if (timeout == 0) {
-				std::cout << "Timeout! Failed to find end in time.\n";
-			}
-			else {
-				std::cout << "Found End! Tacking...\n";
-
-				clearQueue(visiting_);
-				
-				status = calculatePath();
-				if (!status) {
-					if (++paths_[j].priority >= max_priority_) {
-						max_priority_ = paths_[j].priority;
-					}
-					break;
-				}
-			}
-
-			grid_[start_.y * width_ + start_.x] = CELL_PIN;
-
-			clearQueue(visiting_);
-			clear();
-
-			if (status && j == (paths_.size() - 1)) {
-				finished = true;
-			}
-		}
-
-		clearTempBlockers();
+            if (i < 2) {
+                return false;
+            }
+            
+            // Redo the current route. (-1 to repeat, another -1 because we ripped a node.)
+            i -= 2;
+        }
 	}
 
-	if (finished) {
-		std::cout << "Successfully routed.\n";
-	}
-	else {
-		std::cout << "Failed to find routes.\n";
-	}
+    return true;
 }
 
 void GridLees::clear() {

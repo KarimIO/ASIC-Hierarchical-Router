@@ -21,7 +21,7 @@ public:
 	void addPath(Coord start, Coord end);
 	void addPath(Path path);
 	//void addtracks(string ori,string start, string step);
-    void simulate();
+    bool route();
 private:
     Cell *grid_;
 
@@ -49,6 +49,11 @@ private:
 	std::vector<Path> paths_;
 
 	bool simulateStep();
+	bool routeWire(Path &wire);
+
+	void rip(unsigned int wire);
+	unsigned int heuristicSlope(unsigned int id);
+	
 	void printGrid();
 	std::string printSymbol(Cell val);
 	bool checkCell(int x, int y, Check check);

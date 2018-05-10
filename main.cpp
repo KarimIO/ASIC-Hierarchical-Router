@@ -75,11 +75,16 @@ void gridmaker(Def d){
 		for(int i=0;i<np.second.size()-1;i++)
 		{
 			grid.addPath(Path(Coord(np.second[i].first,np.second[i].second), Coord(np.second[i+1].first,np.second[i+1].second)));
-	    grid.simulate();
 
 		}
 	}
-	   // grid.simulate();
+	
+    if (grid.route()) {
+    	std::cout << "Successfully routed.\n";
+	}
+	else {
+		std::cout << "Failed to find routes.\n";
+	}
 
 	// for (auto it : gates_size)
 	// {
@@ -270,9 +275,14 @@ int main() {
 
 	grid.setBlockers(blocks.size(), blocks.data());
 
-    grid.simulate();
+    if (grid.route()) {
+    	std::cout << "Successfully routed.\n";
+	}
+	else {
+		std::cout << "Failed to find routes.\n";
+	}
 
-	Parse();
+	//Parse();
 
 #ifdef _WIN32
 	system("pause");
