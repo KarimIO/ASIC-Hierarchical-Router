@@ -27,7 +27,7 @@ void gridmaker(Def d){
 	int pinx1,pinx2,piny1,piny2;
 	int gatew,gateh;
     int pinX,pinY;
-	GridLees grid(xsize, ysize, 1);
+	GridLees grid(xsize, ysize, 2);
 	DefPin p = d.pinlist[0];
 	//cout<<p.placed_pos[0]<<endl;
 	DefNet n = d.netlist[0];
@@ -292,7 +292,7 @@ int main() {
 		std::cout << "Failed to find routes.\n";
 	}
 
-	// Parse();
+	Parse();
 
 #ifdef _WIN32
 	system("pause");
