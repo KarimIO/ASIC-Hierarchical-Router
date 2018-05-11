@@ -240,7 +240,9 @@ double getPathValue(Path &i) {
 bool compare(Path &i, Path &j) { return getPathValue(i) < getPathValue(j); }
 
 double slope(Path &p) {
-    return (p.start.y - p.end.y) / (p.start.x - p.end.x);
+    double a = (p.start.y - p.end.y);
+    double b = (p.start.x - p.end.x);
+    return a / b;
 }
 
 unsigned int GridLees::heuristicSlope(unsigned int id) {
@@ -322,6 +324,7 @@ bool GridLees::route() {
 
     // Try Routing
     for (int i = 0; i < paths_.size(); ++i) {
+        std::cout << "Attempting to route: " << paths_[i].print() << "\n";
         // Try to route the wire
         status = routeWire(i);
 
@@ -333,7 +336,7 @@ bool GridLees::route() {
 
             unsigned int id = heuristicSlope(i);
             rip(id);
-            std::cout << "Ripping path: " << paths_[id].print() << "\n";
+            std::cout << "Failed; Ripping path: " << paths_[id].print() << "\n";
 
             // Clear Pin Paths
             clearRoute(i);
