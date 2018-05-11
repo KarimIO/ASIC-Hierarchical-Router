@@ -21,31 +21,32 @@ void gridmaker(Def d){
 	int y1 = d.diearea_y1;
 	int x2 = d.diearea_x2;
 	int y2 = d.diearea_y2;
-	int xsize = (x2-x1)/100;
-	int ysize = (y2-y1)/100;
+	int xsize = (x2-x1)/10;
+	int ysize = (y2-y1)/10;
 	cout<<xsize<<" "<<ysize<<endl;
 	int pinx1,pinx2,piny1,piny2;
 	int gatew,gateh;
     int pinX,pinY;
 	GridLees grid(xsize,ysize);
 	DefPin p = d.pinlist[0];
-	cout<<p.placed_pos[0]<<endl;
+	//cout<<p.placed_pos[0]<<endl;
 	DefNet n = d.netlist[0];
 	DefComponent c;
 	//cout<<n.gate_to_pin<<endl;
 	Tracks metal1 = d.tracklist[0];
-	cout<<metal1.name<<endl;
-	cout<<metal1.pos<<endl;
+	//cout<<metal1.name<<endl;
+	//cout<<metal1.pos<<endl;
 	//grid.addtracks(metal1.name,metal1.pos,metal1.step);
 
-	cout<<"checking my values"<<endl;
+	//cout<<"checking my values"<<endl;
 	//using john's print function to get pin values 
-		cout << "\n\n-------------------------SIZES--------------------\n";
 
 	map<string,string> name_to_gate;
 	map<string, vector<pair<int,int> > > net_pins;
+	map<string,pair<int,int> >  gate_origin;
 	for(auto c:d.complist){
 		name_to_gate[c.name]=c.gate;
+		gate_origin[c.name]=make_pair(c.x/10,c.y/10);
 	}
 	for(auto net:d.netlist)
 	{
@@ -54,9 +55,11 @@ void gridmaker(Def d){
 		for(auto g:net.gate_to_pin)
 		{
 			string gname = name_to_gate[g.first];
+			int x=gate_origin[g.first].first;
+			int y=gate_origin[g.first].second;
 			for(auto it2: gates_pins[gname])
 			{
-				if(it2.pin==g.second)
+				if(it2.pin.compare(g.second)==0)
 				{
 					pinx1 = it2.x1*10;
 					piny1 = it2.y1*10;
@@ -64,7 +67,9 @@ void gridmaker(Def d){
 					piny2 = it2.y2*10;
 					pinX = pinx1+pinx2 / 2; 
 					pinY = piny1+piny2 / 2;
-					net_pins[net.name].push_back(make_pair(pinX,pinY));
+					net_pins[net.name].push_back(make_pair(pinX+x,pinY+y));
+					
+					cout<<net.name<<" "<<g.second<<" "<<pinX+x<<" " <<pinY+y<<endl;
 					break;
 				}
 			}
@@ -74,6 +79,7 @@ void gridmaker(Def d){
 	{
 		for(int i=0;i<np.second.size()-1;i++)
 		{
+			//cout<<np.second[i].first<<" "<<np.second[i].second<<"\t"<<np.second[i+1].first<<" "<<np.second[i+1].second<<endl;
 			grid.addPath(Path(Coord(np.second[i].first,np.second[i].second), Coord(np.second[i+1].first,np.second[i+1].second)));
 
 		}
@@ -159,7 +165,7 @@ bool Parse()
 	if (!extractLEF("Files/osu035.lef")){
 		cerr << "Couldn' get info from lef file\n";
 	}
-	print();
+	//print();
 	
 	gridmaker(d);
 	return 0;
@@ -261,28 +267,28 @@ void print()
 }
 
 int main() {
-    GridLees grid(12, 8);
-	grid.addPath(Path(Coord(2, 3), Coord(5, 5)));
-	grid.addPath(Path(2, 1, 6, 5));
-	grid.addPath(Path(2, 2, 7, 5));
+    //GridLees grid(12, 8);
+	//grid.addPath(Path(Coord(2, 3), Coord(5, 5)));
+	//grid.addPath(Path(2, 1, 6, 5));
+	//grid.addPath(Path(2, 2, 7, 5));
 
-	std::vector<Coord> blocks;
-	blocks.emplace_back(4, 4);
-    blocks.emplace_back(4, 5);
-    blocks.emplace_back(4, 6);
-    blocks.emplace_back(5, 4);
-    blocks.emplace_back(6, 4);
+	//std::vector<Coord> blocks;
+	//blocks.emplace_back(4, 4);
+    //blocks.emplace_back(4, 5);
+    //blocks.emplace_back(4, 6);
+    //blocks.emplace_back(5, 4);
+    //blocks.emplace_back(6, 4);
 
-	grid.setBlockers(blocks.size(), blocks.data());
+	//grid.setBlockers(blocks.size(), blocks.data());
 
-    if (grid.route()) {
-    	std::cout << "Successfully routed.\n";
-	}
-	else {
-		std::cout << "Failed to find routes.\n";
-	}
+    //if (grid.route()) {
+    	//std::cout << "Successfully routed.\n";
+	//}
+	//else {
+		//std::cout << "Failed to find routes.\n";
+	//}
 
-	//Parse();
+	Parse();
 
 #ifdef _WIN32
 	system("pause");
