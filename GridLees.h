@@ -9,7 +9,7 @@ typedef int Cell;
 const Cell CELL_PIN		= -1;
 const Cell CELL_EMPTY	= -2;
 const Cell CELL_BLOCK	= -3;
-const Cell CELL_WIRE_BLOCK = -4;
+const Cell CELL_BASE_WIRE_BLOCK = -4;
 
 class GridLees {
 public:
@@ -45,20 +45,28 @@ private:
 	Coord end_;
 
 	std::queue<CellID> visiting_;
+	std::vector<CellID> path_;
 
 	std::vector<Path> paths_;
 
 	bool simulateStep();
-	bool routeWire(Path &wire);
+	bool routeWire(unsigned int wire_id);
 
+	inline int wireToCell(unsigned int wire);
+
+	void clearRoute(unsigned int wire);
 	void rip(unsigned int wire);
 	unsigned int heuristicSlope(unsigned int id);
+
+	inline Cell &getGrid(unsigned int x, unsigned int y);
 	
 	void printGrid();
+	void printPath(unsigned int wire_id);
+
 	std::string printSymbol(Cell val);
 	bool checkCell(int x, int y, Check check);
 	bool checkValue(Cell val);
-	bool calculatePath();
+	bool calculatePath(unsigned int wire_id);
 	void clear();
 	void clearQueue(std::queue<CellID> &q);
 	void clearTempBlockers();

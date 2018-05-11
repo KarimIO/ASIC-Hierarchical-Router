@@ -14,6 +14,9 @@ struct Coord {
 		x = a;
 		y = b;
 	}
+	std::string print() {
+		return std::string("(") + std::to_string(x) + ", " + std::to_string(y) + ")";
+	}
 };
 
 struct Path {
@@ -37,6 +40,9 @@ struct Path {
 		end.y = ye;
 
 		priority = 0;
+	}
+	std::string print() {
+		return start.print() + " - " + end.print();
 	}
 };
 

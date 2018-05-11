@@ -136,10 +136,8 @@ bool GridLees::simulateStep() {
     return true;
 }
 
-bool GridLees::calculatePath() {
+bool GridLees::calculatePath(unsigned int wire_id) {
 	bool finished = false;
-	
-	std::vector<CellID> path;
 
     int x = end_.x;
     int y = end_.y;
@@ -149,7 +147,7 @@ bool GridLees::calculatePath() {
         int ymin = y;
 
         if (x > 0 && grid_[y * width_ + x - 1] >= 0 && grid_[y * width_ + x - 1] < min) {
-            path.emplace_back(x - 1, y, 0);
+            path_.emplace_back(x - 1, y, 0);
             min = grid_[y * width_ + x - 1];
             xmin = x - 1;
             ymin = y;
@@ -178,39 +176,31 @@ bool GridLees::calculatePath() {
             break;
         }
 
-        path.emplace_back(xmin, ymin, 0);
+		grid_[ymin * width_ + xmin] = wireToCell(wire_id);
+        path_.emplace_back(xmin, ymin, 0);
 
         x = xmin;
         y = ymin;
     }
 
-	grid_[start_.y * width_ + start_.x] = CELL_PIN;
+    return finished;
+}
 
-	if (!finished)
-		return false;
+
+void GridLees::printPath(unsigned int wire_id) {
+    wire_id = wireToCell(wire_id);
 
     for (int i = 0; i < length_; ++i) {
         for (int j = 0; j < width_; ++j) {
-            bool found = false;
-            for (int k = 0; k < path.size(); ++k) {
-                CellID id = path[k];
-
-                if (id.x == j && id.y == i) {
-					grid_[i * width_ + j] = CELL_WIRE_BLOCK;
-                    found = true;
-                    break;
-                }
-            }
-
 			Cell val = grid_[i * width_ + j];
 
-            if (found) {
+            if (val == wire_id) {
                 std::cout << "x ";
             } 
             else if (val == CELL_PIN) {
                 std::cout << "p ";
             }
-            else if (val == CELL_BLOCK || val == CELL_WIRE_BLOCK) {
+            else if (val == CELL_BLOCK || val <= CELL_BASE_WIRE_BLOCK) {
                 std::cout << "# ";
             }
             else {
@@ -220,13 +210,11 @@ bool GridLees::calculatePath() {
 
         std::cout << "\n";
     }
-
-	return true;
 }
 
 void GridLees::clearTempBlockers() {
 	for (int i = 0; i < length_ * width_; ++i) {
-		if (grid_[i] == CELL_WIRE_BLOCK)
+		if (grid_[i] <= CELL_BASE_WIRE_BLOCK)
 			grid_[i] = CELL_EMPTY;
 	}
 }
@@ -271,50 +259,57 @@ unsigned int GridLees::heuristicSlope(unsigned int id) {
 void GridLees::sortPaths() {
 	std::sort(paths_.begin(), paths_.end(), compare);
 
-	for (auto &p : paths_) {
-		std::cout << "Path: (" << getPathValue(p) << ") (" << p.start.x << ", " << p.start.y << ") to (" << p.end.x << ", " << p.end.y << ")\n";
-	}
+	/*for (auto &p : paths_) {
+		std::cout << "Path: (" << getPathValue(p) << ") " << p.print() << "\n";
+	}*/
 }
 
-bool GridLees::routeWire(Path &wire) {
-    int timeout = 80;
+inline Cell &GridLees::getGrid(unsigned int x, unsigned int y) {
+    return grid_[y * width_ + x];
+}
 
+bool GridLees::routeWire(unsigned int wire_id) {
+    Path &wire = paths_[wire_id];
     start_ = wire.start;
     end_ = wire.end;
     grid_[start_.y * width_ + start_.x] = 0;
 
-    std::cout << "Plotting path from (" << start_.x << ", " << start_.y << ") to (" << end_.x << ", " << end_.y << ")\n";
-
     visiting_.emplace(start_.x, start_.y, 0);
 
     // Wait for timeout, in case of bugs
-    while (visiting_.size() > 0 && simulateStep() && --timeout > 0);
+    while (visiting_.size() > 0 && simulateStep());
 
-    if (visiting_.size() == 0) {
+    bool empty = (visiting_.size() == 0);
+
+    clearQueue(visiting_);
+
+    if (empty) {
         std::cout << "Could not find path to end!\n";
-    }
-    else if (timeout == 0) {
-        std::cout << "Timeout! Failed to find end in time.\n";
-    }
-    else {
-        std::cout << "Found End! Tacking...\n";
+	    grid_[start_.y * width_ + start_.x] = CELL_PIN;
 
-        clearQueue(visiting_);
-        
-        if (!calculatePath()) {
+        clear();
+
+        return false;
+    }
+    else {        
+        if (!calculatePath(wire_id)) {
+	        grid_[start_.y * width_ + start_.x] = CELL_PIN;
             return false;
         }
+        
     }
 
-    grid_[start_.y * width_ + start_.x] = CELL_PIN;
+	grid_[start_.y * width_ + start_.x] = CELL_PIN;
 
     clearQueue(visiting_);
     clear();
+
+    return true;
 }
 
 void GridLees::rip(unsigned int wire) {
     Path p = paths_[wire];
-    paths_.erase(paths_.begin() + 1);
+    paths_.erase(paths_.begin() + wire);
     paths_.push_back(p);
 }
 
@@ -328,24 +323,22 @@ bool GridLees::route() {
     // Try Routing
     for (int i = 0; i < paths_.size(); ++i) {
         // Try to route the wire
-        status = routeWire(paths_[i]);
+        status = routeWire(i);
 
-        // If I route it successfully
-        if (status) {
-
-            // Check if it's the final route
-            if (i == paths_.size() - 1)
-                finished = true;
-        }
-        // Else, try reroute
-        else {
-            unsigned int id = heuristicSlope(i);
-            rip(id);
-
-            if (i < 2) {
+        // If not routed it successfully
+        if (!status) {
+            if (i < 1) {
                 return false;
             }
-            
+
+            unsigned int id = heuristicSlope(i);
+            rip(id);
+            std::cout << "Ripping path: " << paths_[id].print() << "\n";
+
+            // Clear Pin Paths
+            clearRoute(i);
+            clearRoute(id);
+
             // Redo the current route. (-1 to repeat, another -1 because we ripped a node.)
             i -= 2;
         }
@@ -362,19 +355,29 @@ void GridLees::clear() {
 	}
 }
 
+inline int GridLees::wireToCell(unsigned int wire) {
+    return CELL_BASE_WIRE_BLOCK - wire;
+}
+
+void GridLees::clearRoute(unsigned int wire) {
+    int wire_id = wireToCell(wire);
+
+	for (int i = 0; i < width_ * length_; ++i) {
+		if (grid_[i] == wire_id) {
+			grid_[i] = CELL_EMPTY;
+		}
+	}
+}
+
 std::string GridLees::printSymbol(Cell val) {
-    switch(val) {
-    default:
+    if (val > 0)
         return std::to_string(val);
-    case CELL_EMPTY:
+    else if (val == CELL_EMPTY)
         return "__";
-	case 0:
-	case CELL_PIN:
+    else if (val == 0 || val == CELL_PIN)
 		return "00";
-	case CELL_WIRE_BLOCK:
-	case CELL_BLOCK:
+    else
         return "##";
-    }
 }
 
 void GridLees::printGrid() {
