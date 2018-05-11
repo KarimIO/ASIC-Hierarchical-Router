@@ -8,74 +8,64 @@
 
 const bool DEBUG_PATH = false;
 double path_size;
-unsigned int max_priority_;
 
-GridLees::CellID::CellID(int x, int y, int dist) {
+GridLees::CellID::CellID() {
+	this->x = 0;
+	this->y = 0;
+	this->z = 0;
+	this->dist = 0;
+}
+
+GridLees::CellID::CellID(unsigned int x, unsigned int y, unsigned int z, unsigned int dist) {
 	this->x = x;
 	this->y = y;
+	this->z = z;
 	this->dist = dist;
 }
 
-GridLees::GridLees(unsigned int w, unsigned int l) : width_(w), length_(l) {
-    if (w < 0 || l < 0) {
+GridLees::GridLees(unsigned int w, unsigned int l, unsigned int d) : width_(w), length_(l), depth_(d), pitch_(l * w), size_(pitch_ * d) {
+    if (w < 0 || l < 0 || d < 0) {
         throw std::runtime_error("Invalid Size for Grid.");
     }
 
-	max_priority_ = 0;
+    grid_ = new Cell[size_];
 
-    grid_ = new Cell[l * w];
-
-    for (int i = 0; i < l * w; ++i) {
+    for (int i = 0; i < size_; ++i) {
 		grid_[i] = CELL_EMPTY;
     }
 }
 
 void GridLees::setBlockers(unsigned int size, Coord *c) {
 	for (int i = 0; i < size; ++i) {
-		grid_[c[i].y * width_ + c[i].x] = CELL_BLOCK;
+		getGrid(c[i].x, c[i].y, 0) = CELL_BLOCK;
 	}
-}
-void GridLees::addPath(int xs, int ys, int xe, int ye) {
-	paths_.emplace_back(Path(xs, ys, xe, ye));
-	path_size = paths_.size();
-
-	grid_[ys * width_ + xs] = CELL_PIN;
-	grid_[ye * width_ + xe] = CELL_PIN;
-
-}
-
-void GridLees::addPath(Coord start, Coord end) {
-	paths_.emplace_back(Path(start, end));
-
-	grid_[start.y * width_ + start.x] = CELL_PIN;
-	grid_[end.y * width_ + end.x] = CELL_PIN;
 }
 
 void GridLees::addPath(Path p) {
 	paths_.emplace_back(p);
 
-	grid_[p.start.y * width_ + p.start.x] = CELL_PIN;
-	grid_[p.end.y * width_ + p.end.x] = CELL_PIN;
+	getGrid(p.start.x, p.start.y, p.start.z) = CELL_PIN;
+	getGrid(p.end.x, p.end.y, p.end.z) = CELL_PIN;
 }
 
 bool GridLees::checkValue(Cell val) {
     return (val == CELL_EMPTY);
 }
 
-bool GridLees::checkCell(int x, int y, Check check) {
+bool GridLees::checkCell(int x, int y, int z, Check check) {
     switch (check) {
         case CHECK_UP:
             if (y < length_ - 1)
-                return checkValue(grid_[(y + 1) * width_ + x]);
+                return checkValue(getGrid(x, y + 1, z));
         case CHECK_DOWN:
             if (y > 0)
-                return checkValue(grid_[(y - 1) * width_ + x]);
+                return checkValue(getGrid(x, y - 1, z));
         case CHECK_RIGHT:
             if (x < width_ - 1)
-                return checkValue(grid_[y * width_ + x + 1]);
+                return checkValue(getGrid(x + 1, y, z));
         case CHECK_LEFT:
             if (x > 0)
-                return checkValue(grid_[y * width_ + x - 1]);
+                return checkValue(getGrid(x - 1, y, z));
     }
 
     return false;
@@ -90,12 +80,12 @@ bool GridLees::simulateStep() {
         return false;
     }
     else {
-        int v = grid_[id.y * width_ + id.x] + 1;
+        int v = getGrid(id.x, id.y, id.z) + 1;
 
         if (id.x > 0) {
-            if (checkValue(grid_[id.y * width_ + id.x - 1])) {
-                visiting_.emplace(id.x - 1, id.y, v);
-                grid_[id.y * width_ + id.x - 1] = v;
+            if (checkValue(getGrid(id.x - 1, id.y, id.z))) {
+                visiting_.emplace(id.x - 1, id.y, id.z, v);
+                getGrid(id.x - 1, id.y, id.z) = v;
             }
             else if (end_.y == id.y && end_.x == id.x - 1) {
                 return false;
@@ -103,9 +93,9 @@ bool GridLees::simulateStep() {
         }
 
         if (id.x < width_ - 1) {
-            if (checkValue(grid_[id.y * width_ + id.x + 1])) {
-                visiting_.emplace(id.x + 1, id.y, v);
-                grid_[id.y * width_ + id.x + 1] = v;
+            if (checkValue(getGrid(id.x + 1, id.y, id.z))) {
+                visiting_.emplace(id.x + 1, id.y, id.z, v);
+				getGrid(id.x + 1, id.y, id.z) = v;
             }
             else if (end_.y == id.y && end_.x == id.x + 1) {
                 return false;
@@ -113,9 +103,9 @@ bool GridLees::simulateStep() {
         }
 
         if (id.y > 0) {
-            if (checkValue(grid_[(id.y - 1) * width_ + id.x])) {
-                visiting_.emplace(id.x, id.y - 1, v);
-                grid_[(id.y - 1) * width_ + id.x] = v;
+            if (checkValue(getGrid(id.x, id.y - 1, id.z))) {
+                visiting_.emplace(id.x, id.y - 1, id.z, v);
+				getGrid(id.x, id.y - 1, id.z) = v;
             }
 			else if (end_.y == id.y - 1 && end_.x == id.x) {
                 return false;
@@ -123,9 +113,9 @@ bool GridLees::simulateStep() {
         }
 
         if (id.y < length_ - 1) {
-            if (checkValue(grid_[(id.y + 1) * width_ + id.x])) {
-                visiting_.emplace(id.x, id.y + 1, v);
-                grid_[(id.y + 1) * width_ + id.x] = v;
+            if (checkValue(getGrid(id.x, id.y + 1, id.z))) {
+                visiting_.emplace(id.x, id.y + 1, id.z, v);
+				getGrid(id.x, id.y + 1, id.z) = v;
             }
 			else if (end_.y == id.y + 1 && end_.x == id.x) {
                 return false;
@@ -140,35 +130,41 @@ bool GridLees::calculatePath(unsigned int wire_id) {
 	bool finished = false;
 
     int x = end_.x;
-    int y = end_.y;
+	int y = end_.y;
+	int z = end_.z;
     int min = INT32_MAX;
     while (true) {
         int xmin = x;
-        int ymin = y;
+		int ymin = y;
+		int zmin = z;
 
-        if (x > 0 && grid_[y * width_ + x - 1] >= 0 && grid_[y * width_ + x - 1] < min) {
-            path_.emplace_back(x - 1, y, 0);
-            min = grid_[y * width_ + x - 1];
+        if (x > 0 && getGrid(x - 1, y, z) >= 0 && getGrid(x - 1, y, z) < min) {
+            //path_.emplace_back(x - 1, y, z);
+            min = getGrid(x - 1, y, z);
             xmin = x - 1;
-            ymin = y;
+			ymin = y;
+			zmin = z;
         }
 
-        if (x < width_ - 1 && grid_[y * width_ + x + 1] >= 0 && grid_[y * width_ + x + 1] < min) {
-            min = grid_[y * width_ + x + 1];
+        if (x < width_ - 1 && getGrid(x + 1, y, z) >= 0 && getGrid(x + 1, y, z) < min) {
+            min = getGrid(x + 1, y, z);
             xmin = x + 1;
             ymin = y;
+			zmin = z;
         }
 
-        if (y > 0 && grid_[(y - 1) * width_ + x] >= 0 && grid_[(y - 1) * width_ + x] < min) {
-            min = grid_[(y - 1) * width_ + x];
+        if (y > 0 && getGrid(x, y - 1, z) >= 0 && getGrid(x, y - 1, z) < min) {
+            min = getGrid(x, y - 1, z);
             xmin = x;
             ymin = y - 1;
+			zmin = z;
         }
 
-        if (y < length_ - 1 && grid_[(y + 1) * width_ + x] >= 0 && grid_[(y + 1) * width_ + x] < min) {
-            min = grid_[(y + 1) * width_ + x];
+        if (y < length_ - 1 && getGrid(x, y + 1, z) >= 0 && getGrid(x, y + 1, z) < min) {
+            min = getGrid(x, y + 1, z);
             xmin = x;
             ymin = y + 1;
+			zmin = z;
         }
         
         if (min == 0) {
@@ -176,11 +172,12 @@ bool GridLees::calculatePath(unsigned int wire_id) {
             break;
         }
 
-		grid_[ymin * width_ + xmin] = wireToCell(wire_id);
-        path_.emplace_back(xmin, ymin, 0);
+		getGrid(xmin, ymin, zmin) = wireToCell(wire_id);
+        path_.emplace_back(xmin, ymin, zmin, min);
 
         x = xmin;
-        y = ymin;
+		y = ymin;
+		z = zmin;
     }
 
     return finished;
@@ -190,25 +187,27 @@ bool GridLees::calculatePath(unsigned int wire_id) {
 void GridLees::printPath(unsigned int wire_id) {
     wire_id = wireToCell(wire_id);
 
-    for (int i = 0; i < length_; ++i) {
-        for (int j = 0; j < width_; ++j) {
-			Cell val = grid_[i * width_ + j];
+    for (int i = 0; i < depth_; ++i) {
+		for (int j = 0; j < length_; ++j) {
+			for (int k = 0; k < width_; ++k) {
+				Cell val = getGrid(k, j, i);
 
-            if (val == wire_id) {
-                std::cout << "x ";
-            } 
-            else if (val == CELL_PIN) {
-                std::cout << "p ";
-            }
-            else if (val == CELL_BLOCK || val <= CELL_BASE_WIRE_BLOCK) {
-                std::cout << "# ";
-            }
-            else {
-                std::cout << "_ ";
-            }
-        }
+				if (val == wire_id) {
+					std::cout << "x ";
+				}
+				else if (val == CELL_PIN) {
+					std::cout << "p ";
+				}
+				else if (val == CELL_BLOCK || val <= CELL_BASE_WIRE_BLOCK) {
+					std::cout << "# ";
+				}
+				else {
+					std::cout << "_ ";
+				}
+			}
 
-        std::cout << "\n";
+			std::cout << "\n";
+		}
     }
 }
 
@@ -231,10 +230,7 @@ double length(Path &i) {
 }
 
 double getPathValue(Path &i) {
-	unsigned int priority = max_priority_ - i.priority;
-	double val = (priority * path_size);
-
-	return val + length(i);
+	return length(i);
 }
 
 bool compare(Path &i, Path &j) { return getPathValue(i) < getPathValue(j); }
@@ -266,17 +262,17 @@ void GridLees::sortPaths() {
 	}*/
 }
 
-inline Cell &GridLees::getGrid(unsigned int x, unsigned int y) {
-    return grid_[y * width_ + x];
+inline Cell &GridLees::getGrid(unsigned int x, unsigned int y, unsigned int z) {
+    return grid_[z * pitch_ + y * width_ + x];
 }
 
 bool GridLees::routeWire(unsigned int wire_id) {
     Path &wire = paths_[wire_id];
     start_ = wire.start;
     end_ = wire.end;
-    grid_[start_.y * width_ + start_.x] = 0;
+	getGrid(start_.x, start_.y, start_.z) = 0;
 
-    visiting_.emplace(start_.x, start_.y, 0);
+    visiting_.emplace(start_.x, start_.y, start_.z, 0);
 
     // Wait for timeout, in case of bugs
     while (visiting_.size() > 0 && simulateStep());
@@ -287,7 +283,7 @@ bool GridLees::routeWire(unsigned int wire_id) {
 
     if (empty) {
         std::cout << "Could not find path to end!\n";
-	    grid_[start_.y * width_ + start_.x] = CELL_PIN;
+		getGrid(start_.x, start_.y, start_.z) = CELL_PIN;
 
         clear();
 
@@ -295,13 +291,13 @@ bool GridLees::routeWire(unsigned int wire_id) {
     }
     else {        
         if (!calculatePath(wire_id)) {
-	        grid_[start_.y * width_ + start_.x] = CELL_PIN;
+			getGrid(start_.x, start_.y, start_.z) = CELL_PIN;
             return false;
         }
         
     }
 
-	grid_[start_.y * width_ + start_.x] = CELL_PIN;
+	getGrid(start_.x, start_.y, start_.z) = CELL_PIN;
 
     clearQueue(visiting_);
     clear();
@@ -324,7 +320,7 @@ bool GridLees::route() {
 
     // Try Routing
     for (int i = 0; i < paths_.size(); ++i) {
-        std::cout << "Attempting to route: " << paths_[i].print() << "\n";
+        std::cout << "Attempting to route: (" << 100.0f * float(i)/float(paths_.size()) << "%) " << paths_[i].print() << "\n";
         // Try to route the wire
         status = routeWire(i);
 
@@ -351,7 +347,7 @@ bool GridLees::route() {
 }
 
 void GridLees::clear() {
-	for (int i = 0; i < width_ * length_; ++i) {
+	for (int i = 0; i < size_; ++i) {
 		if (grid_[i] > 0) {
 			grid_[i] = CELL_EMPTY;
 		}
@@ -365,7 +361,7 @@ inline int GridLees::wireToCell(unsigned int wire) {
 void GridLees::clearRoute(unsigned int wire) {
     int wire_id = wireToCell(wire);
 
-	for (int i = 0; i < width_ * length_; ++i) {
+	for (int i = 0; i < size_; ++i) {
 		if (grid_[i] == wire_id) {
 			grid_[i] = CELL_EMPTY;
 		}
@@ -384,12 +380,16 @@ std::string GridLees::printSymbol(Cell val) {
 }
 
 void GridLees::printGrid() {
-    for (int i = 0; i < length_; ++i) {
-        for (int j = 0; j < width_; ++j) {
-            std::cout << std::setw(2) << printSymbol(grid_[i * width_ + j]) << " ";
-        }
-        std::cout << "\n";
-    }
+	for (int i = 0; i < depth_; ++i) {
+		for (int j = 0; j < length_; ++j) {
+			for (int k = 0; k < width_; ++k) {
+				std::cout << std::setw(2) << printSymbol(getGrid(k, j, i)) << " ";
+			}
+			std::cout << "\n";
+		}
+		std::cout << "--------------------\n";
+	}
+	std::cout << "====================\n";
 }
 
 GridLees::~GridLees() {

@@ -13,12 +13,10 @@ const Cell CELL_BASE_WIRE_BLOCK = -4;
 
 class GridLees {
 public:
-	GridLees(unsigned int width, unsigned int length);
+	GridLees(unsigned int width, unsigned int length, unsigned int depth);
     ~GridLees();
 
 	void setBlockers(unsigned int size, Coord *coordinates);
-	void addPath(int xs, int ys, int xe, int ye);
-	void addPath(Coord start, Coord end);
 	void addPath(Path path);
 	//void addtracks(string ori,string start, string step);
     bool route();
@@ -26,9 +24,9 @@ private:
     Cell *grid_;
 
 	struct CellID {
-		int x, y, dist;
-		CellID() {};
-		CellID(int x, int y, int dist);
+		unsigned int x, y, z, dist;
+		CellID();
+		CellID(unsigned int x, unsigned int y, unsigned int z, unsigned int dist);
 	};
 
 	enum Check {
@@ -40,6 +38,9 @@ private:
 
     unsigned int width_;
 	unsigned int length_;
+	unsigned int depth_;
+	unsigned int pitch_;
+	unsigned int size_;
 
 	Coord start_;
 	Coord end_;
@@ -58,13 +59,13 @@ private:
 	void rip(unsigned int wire);
 	unsigned int heuristicSlope(unsigned int id);
 
-	inline Cell &getGrid(unsigned int x, unsigned int y);
+	inline Cell &getGrid(unsigned int x, unsigned int y, unsigned int z);
 	
 	void printGrid();
 	void printPath(unsigned int wire_id);
 
 	std::string printSymbol(Cell val);
-	bool checkCell(int x, int y, Check check);
+	bool checkCell(int x, int y, int z, Check check);
 	bool checkValue(Cell val);
 	bool calculatePath(unsigned int wire_id);
 	void clear();

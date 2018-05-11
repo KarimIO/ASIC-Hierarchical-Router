@@ -6,40 +6,39 @@
 struct Coord {
 	int x;
 	int y;
+	int z;
 	Coord() {
 		x = 0;
 		y = 0;
+		z = 0;
 	}
-	Coord(int a, int b) {
+	Coord(unsigned int a, unsigned int b, unsigned int c) {
 		x = a;
 		y = b;
+		z = c;
 	}
 	std::string print() {
-		return std::string("(") + std::to_string(x) + ", " + std::to_string(y) + ")";
+		return std::string("(") + std::to_string(x) + ", " + std::to_string(y) + ", " + std::to_string(z) + ")";
 	}
 };
 
 struct Path {
-	unsigned int priority;
-
 	Coord start;
 	Coord end;
 	Path() {
-		priority = 0;
 	}
 	Path(Coord s, Coord e) {
 		start = s;
 		end = e;
-		priority = 0;
 	}
-	Path(int xs, int ys, int xe, int ye) {
+	Path(unsigned int xs, unsigned int ys, unsigned int zs, unsigned int xe, unsigned int ye, unsigned int ze) {
 		start.x = xs;
 		start.y = ys;
+		start.z = zs;
 
 		end.x = xe;
 		end.y = ye;
-
-		priority = 0;
+		end.z = ze;
 	}
 	std::string print() {
 		return start.print() + " - " + end.print();

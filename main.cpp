@@ -27,7 +27,7 @@ void gridmaker(Def d){
 	int pinx1,pinx2,piny1,piny2;
 	int gatew,gateh;
     int pinX,pinY;
-	GridLees grid(xsize,ysize);
+	GridLees grid(xsize, ysize, 1);
 	DefPin p = d.pinlist[0];
 	//cout<<p.placed_pos[0]<<endl;
 	DefNet n = d.netlist[0];
@@ -80,7 +80,7 @@ void gridmaker(Def d){
 		for(int i=0;i<np.second.size()-1;i++)
 		{
 			//cout<<np.second[i].first<<" "<<np.second[i].second<<"\t"<<np.second[i+1].first<<" "<<np.second[i+1].second<<endl;
-			grid.addPath(Path(Coord(np.second[i].first,np.second[i].second), Coord(np.second[i+1].first,np.second[i+1].second)));
+			grid.addPath(Path(Coord(np.second[i].first,np.second[i].second, 0), Coord(np.second[i+1].first,np.second[i+1].second, 0)));
 
 		}
 	}
@@ -124,7 +124,7 @@ bool Parse()
 {
 	//Extract Def file add more info output to test.def
 	Def d;
-	d.parse("Files/simple_pic_unroute.def");
+	d.parse("Files/rca4.def");
 
 	/*Tracks t;
 	t.name = "test";
@@ -267,26 +267,26 @@ void print()
 }
 
 int main() {
-    //GridLees grid(12, 8);
-	//grid.addPath(Path(Coord(2, 3), Coord(5, 5)));
-	//grid.addPath(Path(2, 1, 6, 5));
-	//grid.addPath(Path(2, 2, 7, 5));
+	GridLees grid(12, 8, 1);
+	grid.addPath(Path(Coord(2, 3, 0), Coord(5, 5, 0)));
+	grid.addPath(Path(2, 1, 0, 6, 5, 0));
+	grid.addPath(Path(2, 2, 0, 7, 5, 0));
 
-	//std::vector<Coord> blocks;
-	//blocks.emplace_back(4, 4);
-    //blocks.emplace_back(4, 5);
-    //blocks.emplace_back(4, 6);
-    //blocks.emplace_back(5, 4);
-    //blocks.emplace_back(6, 4);
+	std::vector<Coord> blocks;
+	blocks.emplace_back(4, 4, 0);
+    blocks.emplace_back(4, 5, 0);
+    blocks.emplace_back(4, 6, 0);
+    blocks.emplace_back(5, 4, 0);
+    blocks.emplace_back(6, 4, 0);
 
-	//grid.setBlockers(blocks.size(), blocks.data());
+	grid.setBlockers(blocks.size(), blocks.data());
 
-    //if (grid.route()) {
-    	//std::cout << "Successfully routed.\n";
-	//}
-	//else {
-		//std::cout << "Failed to find routes.\n";
-	//}
+    if (grid.route()) {
+    	std::cout << "Successfully routed.\n";
+	}
+	else {
+		std::cout << "Failed to find routes.\n";
+	}
 
 	Parse();
 
