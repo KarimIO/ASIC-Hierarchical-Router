@@ -20,6 +20,7 @@ public:
 	void addPath(Path path);
 	//void addtracks(string ori,string start, string step);
     bool route();
+	void printPaths();
 private:
     Cell *grid_;
 
@@ -34,6 +35,8 @@ private:
 		CHECK_RIGHT,
 		CHECK_DOWN,
 		CHECK_LEFT,
+		CHECK_IN,
+		CHECK_OUT
 	};
 
     unsigned int width_;

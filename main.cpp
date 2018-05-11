@@ -267,28 +267,32 @@ void print()
 }
 
 int main() {
-	GridLees grid(12, 8, 1);
-	grid.addPath(Path(Coord(2, 3, 0), Coord(5, 5, 0)));
-	grid.addPath(Path(2, 1, 0, 6, 5, 0));
-	grid.addPath(Path(2, 2, 0, 7, 5, 0));
+	GridLees grid(12, 8, 2);
+	grid.addPath(Path(Coord(2, 3, 1), Coord(5, 5, 1)));
+	grid.addPath(Path(Coord(2, 1, 1), Coord(6, 5, 1)));
+	grid.addPath(Path(Coord(2, 2, 1), Coord(7, 5, 1)));
 
 	std::vector<Coord> blocks;
-	blocks.emplace_back(4, 4, 0);
-    blocks.emplace_back(4, 5, 0);
-    blocks.emplace_back(4, 6, 0);
-    blocks.emplace_back(5, 4, 0);
-    blocks.emplace_back(6, 4, 0);
+	blocks.emplace_back(4, 4, 1);
+    blocks.emplace_back(4, 5, 1);
+	blocks.emplace_back(4, 6, 1);
+	blocks.emplace_back(5, 4, 1);
+	blocks.emplace_back(6, 4, 1);
+	blocks.emplace_back(2, 1, 0);
+	blocks.emplace_back(2, 2, 0);
+	blocks.emplace_back(2, 3, 0);
 
 	grid.setBlockers(blocks.size(), blocks.data());
 
     if (grid.route()) {
     	std::cout << "Successfully routed.\n";
+		grid.printPaths();
 	}
 	else {
 		std::cout << "Failed to find routes.\n";
 	}
 
-	Parse();
+	// Parse();
 
 #ifdef _WIN32
 	system("pause");
