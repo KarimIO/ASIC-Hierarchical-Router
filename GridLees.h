@@ -13,16 +13,28 @@ const Cell CELL_BASE_WIRE_BLOCK = -4;
 
 class GridLees {
 public:
-	GridLees(unsigned int width, unsigned int length, unsigned int depth);
+	GridLees(int die_x0, int die_y0, int die_x1, int die_y1, unsigned int depth);
     ~GridLees();
 
 	void setBlockers(unsigned int size, Coord *coordinates);
 	void addPath(Path path);
-	//void addtracks(string ori,string start, string step);
     bool route();
 	void printPaths();
+
+	void addLayer(int start_coord, unsigned int num_steps, unsigned int stride, bool is_horizontal);
 private:
-    Cell *grid_;
+	struct Layer {
+		bool is_horizontal;
+		int start_coord;
+		unsigned int num_steps;
+		unsigned int stride;
+		unsigned int width;
+		unsigned int length;
+		unsigned int size;
+		Cell *grid;
+	};
+
+	std::vector<Layer> layers_;
 
 	struct CellID {
 		unsigned int x, y, z, dist;
@@ -39,7 +51,9 @@ private:
 		CHECK_OUT
 	};
 
-    unsigned int width_;
+	int x0_;
+	int y0_;
+	unsigned int width_;
 	unsigned int length_;
 	unsigned int depth_;
 	unsigned int pitch_;
@@ -49,30 +63,32 @@ private:
 	Coord end_;
 
 	std::queue<CellID> visiting_;
-	std::vector<CellID> path_;
 
 	std::vector<Path> paths_;
 
-	bool simulateStep();
+	bool canGoToLayer(unsigned int from_x, unsigned int from_y, unsigned int from_z, unsigned int to_z, unsigned int &to_x, unsigned int &to_y);
+
+	void getGlobalPos(Coord &c);
+	void getLocalPos(Coord &c);
+
+	SimulateStatus simulateStep();
 	bool routeWire(unsigned int wire_id);
 
-	inline int wireToCell(unsigned int wire);
+	int wireToCell(unsigned int wire);
 
 	void clearRoute(unsigned int wire);
 	void rip(unsigned int wire);
 	unsigned int heuristicSlope(unsigned int id);
 
-	inline Cell &getGrid(unsigned int x, unsigned int y, unsigned int z);
+	Cell &getGrid(unsigned int x, unsigned int y, unsigned int z);
 	
 	void printGrid();
 	void printPath(unsigned int wire_id);
 
 	std::string printSymbol(Cell val);
-	bool checkCell(int x, int y, int z, Check check);
 	bool checkValue(Cell val);
 	bool calculatePath(unsigned int wire_id);
 	void clear();
 	void clearQueue(std::queue<CellID> &q);
-	void clearTempBlockers();
 	void sortPaths();
 };

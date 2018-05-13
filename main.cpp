@@ -27,7 +27,7 @@ void gridmaker(Def d){
 	int pinx1,pinx2,piny1,piny2;
 	int gatew,gateh;
     int pinX,pinY;
-	GridLees grid(xsize, ysize, 2);
+	GridLees grid(x1, y1, x2, y2, d.tracklist.size());
 	DefPin p = d.pinlist[0];
 	//cout<<p.placed_pos[0]<<endl;
 	DefNet n = d.netlist[0];
@@ -267,12 +267,16 @@ void print()
 }
 
 int main() {
-	GridLees grid(12, 8, 2);
-	grid.addPath(Path(Coord(2, 3, 1), Coord(5, 5, 1)));
-	grid.addPath(Path(Coord(2, 1, 1), Coord(6, 5, 1)));
-	grid.addPath(Path(Coord(2, 2, 1), Coord(7, 5, 1)));
+	GridLees grid(00, 0, 50, 50, 2);
 
-	std::vector<Coord> blocks;
+	grid.addLayer(0, 10, 5, false);
+	grid.addLayer(0, 5, 10, true);
+
+	grid.addPath(Path(Coord(0, 0, 1), Coord(50, 50, 1)));
+	//grid.addPath(Path(Coord(25, 0, 0), Coord(25, 50, 0)));
+	//grid.addPath(Path(Coord(50, 10, 0), Coord(50, 49, 0)));
+
+	/*std::vector<Coord> blocks;
 	blocks.emplace_back(4, 4, 1);
     blocks.emplace_back(4, 5, 1);
 	blocks.emplace_back(4, 6, 1);
@@ -280,9 +284,9 @@ int main() {
 	blocks.emplace_back(6, 4, 1);
 	blocks.emplace_back(2, 1, 0);
 	blocks.emplace_back(2, 2, 0);
-	blocks.emplace_back(2, 3, 0);
+	blocks.emplace_back(2, 3, 0);*/
 
-	grid.setBlockers(blocks.size(), blocks.data());
+	//grid.setBlockers(blocks.size(), blocks.data());
 
     if (grid.route()) {
     	std::cout << "Successfully routed.\n";
@@ -292,7 +296,7 @@ int main() {
 		std::cout << "Failed to find routes.\n";
 	}
 
-	Parse();
+	// Parse();
 
 #ifdef _WIN32
 	system("pause");

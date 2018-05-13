@@ -23,16 +23,14 @@ GridLees::CellID::CellID(unsigned int x, unsigned int y, unsigned int z, unsigne
 	this->dist = dist;
 }
 
-GridLees::GridLees(unsigned int w, unsigned int l, unsigned int d) : width_(w), length_(l), depth_(d), pitch_(l * w), size_(pitch_ * d) {
-    if (w < 0 || l < 0 || d < 0) {
-        throw std::runtime_error("Invalid Size for Grid.");
-    }
+GridLees::GridLees(int die_x0, int die_y0, int die_x1, int die_y1, unsigned int d) : depth_(d) {
+	x0_ = die_x0;
+	y0_ = die_y0;
 
-    grid_ = new Cell[size_];
+	width_  = die_x1 - die_x0 + 1;
+	length_ = die_y1 - die_y0 + 1;
 
-    for (int i = 0; i < size_; ++i) {
-		grid_[i] = CELL_EMPTY;
-    }
+	layers_.reserve(d);
 }
 
 void GridLees::setBlockers(unsigned int size, Coord *c) {
@@ -41,179 +39,287 @@ void GridLees::setBlockers(unsigned int size, Coord *c) {
 	}
 }
 
+bool GridLees::canGoToLayer(unsigned int from_x, unsigned int from_y, unsigned int from_z, unsigned int to_z, unsigned int &to_x, unsigned int &to_y) {
+	Coord origin(from_x, from_y, from_z);
+	getGlobalPos(origin);
+
+	Layer &l = layers_[to_z];
+
+	if (l.is_horizontal) {
+		int rem = (origin.y - l.start_coord) % l.stride;
+		if (rem == 0) {
+			int y = (origin.y - l.start_coord) / l.stride;
+
+			to_x = origin.x - x0_;
+			to_y = y;
+
+			return true;
+		}
+	}
+	else {
+		int rem = (origin.x - l.start_coord) % l.stride;
+		if (rem == 0) {
+			int x = (origin.x - l.start_coord) / l.stride;
+
+			to_x = x;
+			to_y = origin.y - y0_;
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void GridLees::getGlobalPos(Coord &c) {
+	Layer &l = layers_[c.z];
+
+	if (l.is_horizontal) {
+		int y = c.y * l.stride + l.start_coord;
+
+		c.x = c.x + x0_;
+		c.y = y;
+	}
+	else {
+		int x = c.x * l.stride + l.start_coord;
+
+		c.x = x;
+		c.y = c.y + y0_;
+	}
+}
+
+void GridLees::getLocalPos(Coord &c) {
+	Layer &l = layers_[c.z];
+
+	if (l.is_horizontal) {
+		double y = double(c.y - l.start_coord) / l.stride;
+		y = ((y >= l.num_steps) ? l.num_steps - 1 : y);
+		y = ((y < 0) ? 0 : y);
+
+		c.x_nearest = c.x - x0_;
+		c.y_nearest = round(y);
+	}
+	else {
+		double x = double(c.x - l.start_coord) / l.stride;
+		x = ((x >= l.num_steps) ? l.num_steps - 1 : x);
+		x = ((x < 0) ? 0 : x);
+
+		c.x_nearest = round(x);
+		c.y_nearest = c.y - y0_;
+	}
+}
+
 void GridLees::addPath(Path p) {
 	paths_.emplace_back(p);
+	Path &v = paths_.back();
+	v.id = paths_.size() - 1;
+	getLocalPos(v.start);
+	getLocalPos(v.end);
 
-	getGrid(p.start.x, p.start.y, p.start.z) = CELL_PIN;
-	getGrid(p.end.x, p.end.y, p.end.z) = CELL_PIN;
+	std::cout << "Pin Start " << paths_.size() << ": " << v.start.print() << " -> (" << v.start.x_nearest << ", " << v.start.y_nearest << ")\n";
+	std::cout << "Pin End " << paths_.size() << ": " << v.start.print() << " -> (" << v.end.x_nearest << ", " << v.end.y_nearest << ")\n";
+
+	getGrid(v.start.x_nearest, v.start.y_nearest, v.start.z) = CELL_PIN;
+	getGrid(v.end.x_nearest, v.end.y_nearest, v.end.z) = CELL_PIN;
 }
 
 bool GridLees::checkValue(Cell val) {
     return (val == CELL_EMPTY);
 }
 
-bool GridLees::checkCell(int x, int y, int z, Check check) {
-    switch (check) {
-        case CHECK_UP:
-            if (y < length_ - 1)
-                return checkValue(getGrid(x, y + 1, z));
-        case CHECK_DOWN:
-            if (y > 0)
-                return checkValue(getGrid(x, y - 1, z));
-		case CHECK_RIGHT:
-			if (x < width_ - 1)
-				return checkValue(getGrid(x + 1, y, z));
-		case CHECK_LEFT:
-			if (x > 0)
-				return checkValue(getGrid(x - 1, y, z));
-		case CHECK_OUT:
-			if (z < depth_ - 1)
-				return checkValue(getGrid(x, y, z + 1));
-		case CHECK_IN:
-			if (z > 0)
-				return checkValue(getGrid(x, y, z - 1));
-    }
+void GridLees::addLayer(int start_coord, unsigned int num_steps, unsigned int stride, bool is_horizontal) {
+	layers_.push_back(Layer());
+	Layer &layer = layers_.back();
+	layer.is_horizontal = is_horizontal;
+	layer.start_coord = start_coord;
+	layer.num_steps = num_steps;
+	layer.stride = stride;
 
-    return false;
+	if (is_horizontal) {
+		layer.width = width_;
+		layer.length = num_steps;
+	}
+	else {
+		layer.width = num_steps;
+		layer.length = length_;
+	}
+
+	layer.size = layer.width * layer.length;
+	layer.grid = new Cell[layer.size];
+
+	for (int i = 0; i < layer.size; ++i) {
+		layer.grid[i] = CELL_EMPTY;
+	}
 }
 
-bool GridLees::simulateStep() {
-    CellID id;
+SimulateStatus GridLees::simulateStep() {
+	if (visiting_.size() == 0) {
+		return STATUS_FAILED;
+	}
+	
+	CellID id;
     id = visiting_.front();
     visiting_.pop();
 
-    if (id.x == end_.x && id.y == end_.y && end_.z == id.z) {
-        return false;
+    if (id.x == end_.x_nearest && id.y == end_.y_nearest && end_.z == id.z) {
+        return STATUS_SUCCESS;
     }
     else {
         int v = getGrid(id.x, id.y, id.z) + 1;
 
-        if (id.x > 0) {
-            if (checkValue(getGrid(id.x - 1, id.y, id.z))) {
-                visiting_.emplace(id.x - 1, id.y, id.z, v);
-                getGrid(id.x - 1, id.y, id.z) = v;
-            }
-            else if (end_.z == id.z && end_.y == id.y && end_.x == id.x - 1) {
-                return false;
-            }
-        }
-
-        if (id.x < width_ - 1) {
-            if (checkValue(getGrid(id.x + 1, id.y, id.z))) {
-                visiting_.emplace(id.x + 1, id.y, id.z, v);
-				getGrid(id.x + 1, id.y, id.z) = v;
-            }
-            else if (end_.z == id.z && end_.y == id.y && end_.x == id.x + 1) {
-                return false;
-            }
-        }
-
-		if (id.y > 0) {
-			if (checkValue(getGrid(id.x, id.y - 1, id.z))) {
-				visiting_.emplace(id.x, id.y - 1, id.z, v);
-				getGrid(id.x, id.y - 1, id.z) = v;
+		if (layers_[id.z].is_horizontal) {
+			if (id.x > 0) {
+				if (checkValue(getGrid(id.x - 1, id.y, id.z))) {
+					visiting_.emplace(id.x - 1, id.y, id.z, v);
+					getGrid(id.x - 1, id.y, id.z) = v;
+				}
+				else if (end_.z == id.z && end_.y == id.y && end_.x == id.x - 1) {
+					return STATUS_SUCCESS;
+				}
 			}
-			else if (end_.z == id.z && end_.y == id.y - 1 && end_.x == id.x) {
-				return false;
+
+			if (id.x < width_ - 1) {
+				if (checkValue(getGrid(id.x + 1, id.y, id.z))) {
+					visiting_.emplace(id.x + 1, id.y, id.z, v);
+					getGrid(id.x + 1, id.y, id.z) = v;
+				}
+				else if (end_.z == id.z && end_.y_nearest == id.y && end_.x_nearest == id.x + 1) {
+					return STATUS_SUCCESS;
+				}
 			}
 		}
-
-		if (id.y < length_ - 1) {
-			if (checkValue(getGrid(id.x, id.y + 1, id.z))) {
-				visiting_.emplace(id.x, id.y + 1, id.z, v);
-				getGrid(id.x, id.y + 1, id.z) = v;
+		else {
+			if (id.y > 0) {
+				if (checkValue(getGrid(id.x, id.y - 1, id.z))) {
+					visiting_.emplace(id.x, id.y - 1, id.z, v);
+					getGrid(id.x, id.y - 1, id.z) = v;
+				}
+				else if (end_.z == id.z && end_.y_nearest == id.y - 1 && end_.x_nearest == id.x) {
+					return STATUS_SUCCESS;
+				}
 			}
-			else if (end_.z == id.z && end_.y == id.y + 1 && end_.x == id.x) {
-				return false;
+
+			if (id.y < length_ - 1) {
+				if (checkValue(getGrid(id.x, id.y + 1, id.z))) {
+					visiting_.emplace(id.x, id.y + 1, id.z, v);
+					getGrid(id.x, id.y + 1, id.z) = v;
+				}
+				else if (end_.z == id.z && end_.y_nearest == id.y + 1 && end_.x_nearest == id.x) {
+					return STATUS_SUCCESS;
+				}
 			}
 		}
 
 		if (id.z > 0) {
-			if (checkValue(getGrid(id.x, id.y, id.z - 1))) {
-				visiting_.emplace(id.x, id.y, id.z - 1, v);
-				getGrid(id.x, id.y, id.z - 1) = v;
-			}
-			else if (end_.z == id.z - 1 && end_.y == id.y && end_.x == id.x) {
-				return false;
+			unsigned int x;
+			unsigned int y;
+			if (canGoToLayer(id.x, id.y, id.z, id.z - 1, x, y)) {
+				if (checkValue(getGrid(x, y, id.z - 1))) {
+					visiting_.emplace(x, y, id.z - 1, v);
+					getGrid(x, y, id.z - 1) = v;
+				}
+				else if (end_.z == id.z - 1 && end_.y == y && end_.x == x) {
+					return STATUS_SUCCESS;
+				}
 			}
 		}
 
 		if (id.z < depth_ - 1) {
-			if (checkValue(getGrid(id.x, id.y, id.z + 1))) {
-				visiting_.emplace(id.x, id.y, id.z + 1, v);
-				getGrid(id.x, id.y, id.z + 1) = v;
-			}
-			else if (end_.z == id.z + 1 && end_.y == id.y && end_.x == id.x) {
-				return false;
+			unsigned int x;
+			unsigned int y;
+			if (canGoToLayer(id.x, id.y, id.z, id.z + 1, x, y)) {
+				if (checkValue(getGrid(x, y, id.z + 1))) {
+					visiting_.emplace(x, y, id.z + 1, v);
+					getGrid(x, y, id.z + 1) = v;
+				}
+				else if (end_.z == id.z + 1 && end_.y == y && end_.x == x) {
+					return STATUS_SUCCESS;
+				}
 			}
 		}
     }
 
-    return true;
+    return STATUS_UNFINISHED;
 }
 
 bool GridLees::calculatePath(unsigned int wire_id) {
 	bool finished = false;
 
-    int x = end_.x;
-	int y = end_.y;
+    int x = end_.x_nearest;
+	int y = end_.y_nearest;
 	int z = end_.z;
+	std::cout << end_.x_nearest << " - " << end_.y_nearest << " - " << end_.z << "\n";
     int min = INT32_MAX;
     while (true) {
         int xmin = x;
 		int ymin = y;
 		int zmin = z;
+		
+		std::cout << x << ", " << y << ", " << z << "\n";
 
-        if (x > 0 && getGrid(x - 1, y, z) >= 0 && getGrid(x - 1, y, z) < min) {
-            //path_.emplace_back(x - 1, y, z);
-            min = getGrid(x - 1, y, z);
-            xmin = x - 1;
-			ymin = y;
-			zmin = z;
-        }
+		if (layers_[z].is_horizontal) {
+			if (x > 0 && getGrid(x - 1, y, z) >= 0 && getGrid(x - 1, y, z) < min) {
+				min = getGrid(x - 1, y, z);
+				xmin = x - 1;
+				ymin = y;
+				zmin = z;
+			}
 
-        if (x < width_ - 1 && getGrid(x + 1, y, z) >= 0 && getGrid(x + 1, y, z) < min) {
-            min = getGrid(x + 1, y, z);
-            xmin = x + 1;
-            ymin = y;
-			zmin = z;
-        }
+			if (x < width_ - 1 && getGrid(x + 1, y, z) >= 0 && getGrid(x + 1, y, z) < min) {
+				min = getGrid(x + 1, y, z);
+				xmin = x + 1;
+				ymin = y;
+				zmin = z;
+			}
+		}
+		else {
+			if (y > 0 && getGrid(x, y - 1, z) >= 0 && getGrid(x, y - 1, z) < min) {
+				min = getGrid(x, y - 1, z);
+				xmin = x;
+				ymin = y - 1;
+				zmin = z;
+			}
 
-		if (y > 0 && getGrid(x, y - 1, z) >= 0 && getGrid(x, y - 1, z) < min) {
-			min = getGrid(x, y - 1, z);
-			xmin = x;
-			ymin = y - 1;
-			zmin = z;
+			if (y < length_ - 1 && getGrid(x, y + 1, z) >= 0 && getGrid(x, y + 1, z) < min) {
+				min = getGrid(x, y + 1, z);
+				xmin = x;
+				ymin = y + 1;
+				zmin = z;
+			}
 		}
 
-		if (y < length_ - 1 && getGrid(x, y + 1, z) >= 0 && getGrid(x, y + 1, z) < min) {
-			min = getGrid(x, y + 1, z);
-			xmin = x;
-			ymin = y + 1;
-			zmin = z;
+		if (z > 0) {
+			unsigned int new_x;
+			unsigned int new_y;
+			if (canGoToLayer(x, y, z, z - 1, new_x, new_y)) {
+				if (getGrid(new_x, new_y, z - 1) >= 0 && getGrid(new_x, new_y, z - 1) < min) {
+					min = getGrid(new_x, new_y, z - 1);
+					xmin = new_x;
+					ymin = new_y;
+					zmin = z - 1;
+				}
+			}
 		}
 
-		if (z > 0 && getGrid(x, y, z - 1) >= 0 && getGrid(x, y, z - 1) < min) {
-			min = getGrid(x, y, z - 1);
-			xmin = x;
-			ymin = y;
-			zmin = z - 1;
+		if (z < depth_ - 1) {
+			unsigned int new_x;
+			unsigned int new_y;
+			if (canGoToLayer(x, y, z, z + 1, new_x, new_y)) {
+				if (getGrid(new_x, new_y, z + 1) >= 0 && getGrid(new_x, new_y, z + 1) < min) {
+					min = getGrid(new_x, new_y, z + 1);
+					xmin = new_x;
+					ymin = new_y;
+					zmin = z + 1;
+				}
+			}
 		}
 
-		if (z < depth_ - 1 && getGrid(x, y, z + 1) >= 0 && getGrid(x, y, z + 1) < min) {
-			min = getGrid(x, y, z + 1);
-			xmin = x;
-			ymin = y;
-			zmin = z + 1;
-		}
-        
         if (min == 0) {
 			finished = true;
             break;
         }
 
 		getGrid(xmin, ymin, zmin) = wireToCell(wire_id);
-        path_.emplace_back(xmin, ymin, zmin, min);
 
         x = xmin;
 		y = ymin;
@@ -228,8 +334,9 @@ void GridLees::printPath(unsigned int wire_id) {
     wire_id = wireToCell(wire_id);
 
     for (int i = 0; i < depth_; ++i) {
-		for (int j = 0; j < length_; ++j) {
-			for (int k = 0; k < width_; ++k) {
+		Layer &l = layers_[i];
+		for (int j = 0; j < l.length; ++j) {
+			for (int k = 0; k < l.width; ++k) {
 				Cell val = getGrid(k, j, i);
 
 				if (val == wire_id) {
@@ -249,13 +356,6 @@ void GridLees::printPath(unsigned int wire_id) {
 			std::cout << "\n";
 		}
     }
-}
-
-void GridLees::clearTempBlockers() {
-	for (int i = 0; i < length_ * width_; ++i) {
-		if (grid_[i] <= CELL_BASE_WIRE_BLOCK)
-			grid_[i] = CELL_EMPTY;
-	}
 }
 
 void GridLees::clearQueue(std::queue<CellID> &q) {
@@ -303,27 +403,31 @@ void GridLees::sortPaths() {
 }
 
 inline Cell &GridLees::getGrid(unsigned int x, unsigned int y, unsigned int z) {
-    return grid_[z * pitch_ + y * width_ + x];
+	return layers_[z].grid[y * layers_[z].width + x];
 }
 
 bool GridLees::routeWire(unsigned int wire_id) {
     Path &wire = paths_[wire_id];
     start_ = wire.start;
     end_ = wire.end;
-	getGrid(start_.x, start_.y, start_.z) = 0;
+	getGrid(start_.x_nearest, start_.y_nearest, start_.z) = 0;
 
-    visiting_.emplace(start_.x, start_.y, start_.z, 0);
+    visiting_.emplace(start_.x_nearest, start_.y_nearest, start_.z, 0);
+
+	SimulateStatus status;
 
     // Wait for timeout, in case of bugs
-    while (visiting_.size() > 0 && simulateStep());
+    while ((status = simulateStep()) == STATUS_UNFINISHED);
 
     bool empty = (visiting_.size() == 0);
 
     clearQueue(visiting_);
 
-    if (empty) {
+	printGrid();
+
+    if (status == STATUS_FAILED) {
         std::cout << "Could not find path to end!\n";
-		getGrid(start_.x, start_.y, start_.z) = CELL_PIN;
+		getGrid(start_.x_nearest, start_.y_nearest, start_.z) = CELL_PIN;
 
         clear();
 
@@ -331,13 +435,15 @@ bool GridLees::routeWire(unsigned int wire_id) {
     }
     else {        
         if (!calculatePath(wire_id)) {
-			getGrid(start_.x, start_.y, start_.z) = CELL_PIN;
+			getGrid(start_.x_nearest, start_.y_nearest, start_.z) = CELL_PIN;
+			printPath(wire_id);
             return false;
         }
+		printPath(wire_id);
         
     }
 
-	getGrid(start_.x, start_.y, start_.z) = CELL_PIN;
+	getGrid(start_.x_nearest, start_.y_nearest, start_.z) = CELL_PIN;
 
     clearQueue(visiting_);
     clear();
@@ -387,9 +493,12 @@ bool GridLees::route() {
 }
 
 void GridLees::clear() {
-	for (int i = 0; i < size_; ++i) {
-		if (grid_[i] > 0) {
-			grid_[i] = CELL_EMPTY;
+	for (int i = 0; i < depth_; ++i) {
+		Layer &l = layers_[i];
+		for (int j = 0; j < l.size; ++j) {
+			if (l.grid[j] > 0) {
+				l.grid[j] = CELL_EMPTY;
+			}
 		}
 	}
 }
@@ -401,9 +510,12 @@ inline int GridLees::wireToCell(unsigned int wire) {
 void GridLees::clearRoute(unsigned int wire) {
     int wire_id = wireToCell(wire);
 
-	for (int i = 0; i < size_; ++i) {
-		if (grid_[i] == wire_id) {
-			grid_[i] = CELL_EMPTY;
+	for (int i = 0; i < depth_; ++i) {
+		Layer &l = layers_[i];
+		for (int j = 0; j < l.size; ++j) {
+			if (l.grid[j] == wire_id) {
+				l.grid[j] = CELL_EMPTY;
+			}
 		}
 	}
 }
@@ -421,8 +533,9 @@ std::string GridLees::printSymbol(Cell val) {
 
 void GridLees::printGrid() {
 	for (int i = 0; i < depth_; ++i) {
-		for (int j = 0; j < length_; ++j) {
-			for (int k = 0; k < width_; ++k) {
+		Layer &l = layers_[i];
+		for (int j = 0; j < l.length; ++j) {
+			for (int k = 0; k < l.width; ++k) {
 				std::cout << std::setw(2) << printSymbol(getGrid(k, j, i)) << " ";
 			}
 			std::cout << "\n";
@@ -435,8 +548,9 @@ void GridLees::printGrid() {
 void GridLees::printPaths() {
 	std::string val;
 	for (int i = 0; i < depth_; ++i) {
-		for (int j = 0; j < length_; ++j) {
-			for (int k = 0; k < width_; ++k) {
+		Layer &l = layers_[i];
+		for (int j = 0; j < l.length; ++j) {
+			for (int k = 0; k < l.width; ++k) {
 				Cell v = getGrid(k, j, i);
 				if (v == CELL_EMPTY) {
 					val = "_";
@@ -449,6 +563,7 @@ void GridLees::printPaths() {
 				}
 				else if (v <= CELL_BASE_WIRE_BLOCK) {
 					int fix_val = CELL_BASE_WIRE_BLOCK - v;
+					fix_val = paths_[fix_val].id;
 					val = std::to_string(fix_val);
 				}
 				else {
@@ -464,6 +579,8 @@ void GridLees::printPaths() {
 }
 
 GridLees::~GridLees() {
-    if (grid_ != nullptr)
-        delete[] grid_;
+	for (int i = 0; i < depth_; ++i) {
+		if (layers_[i].grid != nullptr)
+			delete[] layers_[i].grid;
+	}
 }

@@ -7,6 +7,10 @@ struct Coord {
 	int x;
 	int y;
 	int z;
+
+	int x_nearest;
+	int y_nearest;
+
 	Coord() {
 		x = 0;
 		y = 0;
@@ -23,6 +27,7 @@ struct Coord {
 };
 
 struct Path {
+	unsigned int id;
 	Coord start;
 	Coord end;
 	Path() {
@@ -45,8 +50,15 @@ struct Path {
 	}
 };
 
+enum SimulateStatus {
+	STATUS_UNFINISHED = 0,
+	STATUS_FAILED,
+	STATUS_SUCCESS
+};
+
 class GridBase {
 public:
+
     virtual ~GridBase() = 0;
 
 	virtual void setBlockers(unsigned int size, Coord *coordinates) = 0;
