@@ -30,6 +30,8 @@ GridLees::GridLees(int die_x0, int die_y0, int die_x1, int die_y1, unsigned int 
 	width_  = die_x1 - die_x0 + 1;
 	length_ = die_y1 - die_y0 + 1;
 
+	debug_mode_ = 0;
+
 	layers_.reserve(d);
 }
 
@@ -50,6 +52,9 @@ bool GridLees::canGoToLayer(unsigned int from_x, unsigned int from_y, unsigned i
 		if (rem == 0) {
 			int y = (origin.y - l.start_coord) / l.stride;
 
+			if (y >= l.num_steps)
+				return false;
+
 			to_x = origin.x - x0_;
 			to_y = y;
 
@@ -60,6 +65,9 @@ bool GridLees::canGoToLayer(unsigned int from_x, unsigned int from_y, unsigned i
 		int rem = (origin.x - l.start_coord) % l.stride;
 		if (rem == 0) {
 			int x = (origin.x - l.start_coord) / l.stride;
+
+			if (x >= l.num_steps)
+				return false;
 
 			to_x = x;
 			to_y = origin.y - y0_;
@@ -86,6 +94,10 @@ void GridLees::getGlobalPos(Coord &c) {
 		c.x = x;
 		c.y = c.y + y0_;
 	}
+}
+
+void GridLees::setDebugMode(bool mid_path, bool mid_grid, bool show_add_pins) {
+	debug_mode_ = (mid_path * DEBUG_MID_PATHS) | (mid_grid * DEBUG_MID_GRID)  | (show_add_pins * DEBUG_ADD_PINS);
 }
 
 void GridLees::getLocalPos(Coord &c) {
@@ -116,8 +128,10 @@ void GridLees::addPath(Path p) {
 	getLocalPos(v.start);
 	getLocalPos(v.end);
 
-	std::cout << "Pin Start " << paths_.size() << ": " << v.start.print() << " -> (" << v.start.x_nearest << ", " << v.start.y_nearest << ")\n";
-	std::cout << "Pin End " << paths_.size() << ": " << v.start.print() << " -> (" << v.end.x_nearest << ", " << v.end.y_nearest << ")\n";
+	if (debug_mode_ & DEBUG_ADD_PINS) {
+		std::cout << "Pin Start " << paths_.size() << ": " << v.start.print() << " -> (" << v.start.x_nearest << ", " << v.start.y_nearest << ")\n";
+		std::cout << "Pin End " << paths_.size() << ": " << v.end.print() << " -> (" << v.end.x_nearest << ", " << v.end.y_nearest << ")\n";
+	}
 
 	getGrid(v.start.x_nearest, v.start.y_nearest, v.start.z) = CELL_PIN;
 	getGrid(v.end.x_nearest, v.end.y_nearest, v.end.z) = CELL_PIN;
@@ -248,14 +262,12 @@ bool GridLees::calculatePath(unsigned int wire_id) {
     int x = end_.x_nearest;
 	int y = end_.y_nearest;
 	int z = end_.z;
-	std::cout << end_.x_nearest << " - " << end_.y_nearest << " - " << end_.z << "\n";
+	
     int min = INT32_MAX;
     while (true) {
         int xmin = x;
 		int ymin = y;
 		int zmin = z;
-		
-		std::cout << x << ", " << y << ", " << z << "\n";
 
 		if (layers_[z].is_horizontal) {
 			if (x > 0 && getGrid(x - 1, y, z) >= 0 && getGrid(x - 1, y, z) < min) {
@@ -423,7 +435,8 @@ bool GridLees::routeWire(unsigned int wire_id) {
 
     clearQueue(visiting_);
 
-	printGrid();
+	if (debug_mode_ & DEBUG_MID_GRID)
+		printGrid();
 
     if (status == STATUS_FAILED) {
         std::cout << "Could not find path to end!\n";
@@ -436,10 +449,13 @@ bool GridLees::routeWire(unsigned int wire_id) {
     else {        
         if (!calculatePath(wire_id)) {
 			getGrid(start_.x_nearest, start_.y_nearest, start_.z) = CELL_PIN;
-			printPath(wire_id);
+			if (debug_mode_ & DEBUG_MID_PATHS)
+					printPath(wire_id);
             return false;
         }
-		printPath(wire_id);
+
+		if (debug_mode_ & DEBUG_MID_PATHS)
+			printPath(wire_id);
         
     }
 

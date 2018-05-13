@@ -11,6 +11,10 @@ const Cell CELL_EMPTY	= -2;
 const Cell CELL_BLOCK	= -3;
 const Cell CELL_BASE_WIRE_BLOCK = -4;
 
+const unsigned int DEBUG_MID_PATHS		= 0x1;
+const unsigned int DEBUG_MID_GRID		= 0x2;
+const unsigned int DEBUG_ADD_PINS		= 0x4;
+
 class GridLees {
 public:
 	GridLees(int die_x0, int die_y0, int die_x1, int die_y1, unsigned int depth);
@@ -22,6 +26,7 @@ public:
 	void printPaths();
 
 	void addLayer(int start_coord, unsigned int num_steps, unsigned int stride, bool is_horizontal);
+	void setDebugMode(bool mid_path, bool mid_grid, bool show_add_pins);
 private:
 	struct Layer {
 		bool is_horizontal;
@@ -58,6 +63,8 @@ private:
 	unsigned int depth_;
 	unsigned int pitch_;
 	unsigned int size_;
+
+	unsigned int debug_mode_;
 
 	Coord start_;
 	Coord end_;
