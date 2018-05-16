@@ -91,8 +91,10 @@ void Parser::parseDEF()
 {
 	d.parse(def_file);
 }
+
 bool Parser::write_output(string outfile){
 	d.write(outfile);
+	return true;
 }
 
 void Parser::print(){

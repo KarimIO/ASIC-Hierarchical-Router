@@ -14,16 +14,15 @@ void gridmaker(Parser p){
 	int y2 = p.d.diearea_y2;
 	int xsize = (x2-x1);
 	int ysize = (y2-y1);
-	cout<<xsize<<" "<<ysize<<endl;
+	cout << "Die Area: " << xsize << " " << ysize << endl;
 	int pinx1,pinx2,piny1,piny2;
 	int gatew,gateh;
     int pinX,pinY;
 	GridLees grid(x1, y1, x2, y2, p.d.tracklist.size());
+	grid.setDebugMode(false, false, true, true);
 	DefPin pin = p.d.pinlist[0];
-	//cout<<p.placed_pos[0]<<endl;
 	DefNet n = p.d.netlist[0];
 	DefComponent c;
-	//cout<<n.gate_to_pin<<endl;
 	for (int t = 0; t < p.d.tracklist.size(); ++t) {
 		Tracks track = p.d.tracklist[t];
 		grid.addLayer(stoi(track.pos), stoi(track._do), stoi(track.step), track.name == "X");
@@ -36,8 +35,8 @@ void gridmaker(Parser p){
 		name_to_gate[c.name]=c.gate;
 		gate_origin[c.name]=make_pair(c.x,c.y);
 	}
-	for(auto net:p.d.netlist)
-	{
+
+	for(auto net:p.d.netlist) {
 		vector<pair<int,int> > vp;
 		net_pins[net.name]=vp;
 		for(auto g:net.gate_to_pin)
@@ -53,8 +52,8 @@ void gridmaker(Parser p){
 					piny1 = it2.y1*100;
 					pinx2 = it2.x2*100;
 					piny2 = it2.y2*100;
-					pinX = pinx1+pinx2 / 2; 
-					pinY = piny1+piny2 / 2;
+					pinX = pinx1+pinx2 / 2 + x1; 
+					pinY = piny1+piny2 / 2 + y1;
 					net_pins[net.name].push_back(make_pair(pinX+x,pinY+y));
 					
 					// cout<<net.name<<" "<<g.second<<" "<<pinX+x<<" " <<pinY+y<<endl;
@@ -111,48 +110,55 @@ void gridmaker(Parser p){
 
 
 int main(int argc, char *argv[]) {
-	
+
+#if 1
+
 	string lef_path = "Files/osu035.lef";
-	string def_path = "Files/simple_pic_unroute.def";
+	string def_path = "Files/rca4.def";
+
+	if (argc > 1) {
+		def_path = argv[1];
+
+		if (argc > 2) {
+			lef_path = argv[2];
+		}
+	}
+
 	Parser p(def_path,lef_path);
-	if(!p.parseLEF())
-	{
-		cerr<<"Error parsing LEF\n";
+	if(!p.parseLEF()) {
+		cerr << "Error parsing LEF\n";
 		exit(1);
 	}
+
 	p.parseDEF();
 
 	gridmaker(p);
 
-	// GridLees grid(0, 0, 50, 50, 2);
+#else
 
-	// grid.setDebugMode(true, true, true);
+	GridLees grid(0, 0, 50, 50, 2);
 
-	// grid.addLayer(0, 11, 5, false);
-	// grid.addLayer(0, 6, 10, true);
+	grid.setDebugMode(true, true, true, false);
 
-	// grid.addPath(Path(Coord(0, 0, 0), Coord(50, 50, 1)));
-	// grid.addPath(Path(Coord(25, 0, 0), Coord(15, 25, 0)));
-	// grid.addPath(Path(Coord(20, 0, 0), Coord(20, 50, 0)));
-	// grid.addPath(Path(Coord(20, 0, 1), Coord(20, 50, 1)));
-	// grid.addPath(Path(Coord(50, 10, 0), Coord(50, 49, 0)));
+	grid.addLayer(0, 11, 5, false);
+	grid.addLayer(0, 6, 10, true);
 
-    // if (grid.route()) {
-    // 	std::cout << "Successfully routed.\n";
-	// 	grid.printPaths();
-	// }
-	// else {
-	// 	std::cout << "Failed to find routes.\n";
-	// }
-	
+	grid.addPath(Path(Coord(0, 0, 0), Coord(50, 50, 1)));
+	grid.addPath(Path(Coord(25, 0, 0), Coord(15, 25, 0)));
+	grid.addPath(Path(Coord(20, 0, 0), Coord(20, 50, 0)));
+	grid.addPath(Path(Coord(20, 0, 1), Coord(20, 50, 1)));
+	grid.addPath(Path(Coord(50, 10, 0), Coord(50, 49, 0)));
+	grid.addBlockArea(Coord(15, 15, 0), Coord(20, 20, 0));
 
-	// std::string path;
-	// if (argc > 1)
-	// 	path = argv[1];
-	// else
-	// 	path = "Files/rca4.def";
+    if (grid.route()) {
+    	std::cout << "Successfully routed.\n";
+		grid.printPaths();
+	}
+	else {
+	 	std::cout << "Failed to find routes.\n";
+	}
 
-	// // Parse(path);
+#endif
 
 #ifdef _WIN32
 	system("pause");

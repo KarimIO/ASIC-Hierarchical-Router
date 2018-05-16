@@ -61,6 +61,7 @@ public:
 
     virtual ~GridBase() = 0;
 
+	virtual void addBlockArea(Coord start_coord, Coord bottom_right) = 0;
 	virtual void setBlockers(unsigned int size, Coord *coordinates) = 0;
 	virtual void addPath(int xs, int ys, int xe, int ye) = 0;
 	virtual void addPath(Coord start, Coord end) = 0;

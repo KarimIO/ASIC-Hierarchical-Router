@@ -14,6 +14,7 @@ const Cell CELL_BASE_WIRE_BLOCK = -4;
 const unsigned int DEBUG_MID_PATHS		= 0x1;
 const unsigned int DEBUG_MID_GRID		= 0x2;
 const unsigned int DEBUG_ADD_PINS		= 0x4;
+const unsigned int DEBUG_ADD_TRACKS		= 0x8;
 
 class GridLees {
 public:
@@ -25,8 +26,9 @@ public:
     bool route();
 	void printPaths();
 
+	void addBlockArea(Coord min_coord, Coord max_coord);
 	void addLayer(int start_coord, unsigned int num_steps, unsigned int stride, bool is_horizontal);
-	void setDebugMode(bool mid_path, bool mid_grid, bool show_add_pins);
+	void setDebugMode(bool mid_path, bool mid_grid, bool show_add_pins, bool show_add_tracks);
 private:
 	struct Layer {
 		bool is_horizontal;

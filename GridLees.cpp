@@ -30,6 +30,9 @@ GridLees::GridLees(int die_x0, int die_y0, int die_x1, int die_y1, unsigned int 
 	width_  = die_x1 - die_x0 + 1;
 	length_ = die_y1 - die_y0 + 1;
 
+	std::cout << "Die Width: " << width_ << "\n";
+	std::cout << "Die Length: " << length_ << "\n";
+
 	debug_mode_ = 0;
 
 	layers_.reserve(d);
@@ -96,8 +99,8 @@ void GridLees::getGlobalPos(Coord &c) {
 	}
 }
 
-void GridLees::setDebugMode(bool mid_path, bool mid_grid, bool show_add_pins) {
-	debug_mode_ = (mid_path * DEBUG_MID_PATHS) | (mid_grid * DEBUG_MID_GRID)  | (show_add_pins * DEBUG_ADD_PINS);
+void GridLees::setDebugMode(bool mid_path, bool mid_grid, bool show_add_pins, bool show_add_tracks) {
+	debug_mode_ = (mid_path * DEBUG_MID_PATHS) | (mid_grid * DEBUG_MID_GRID) | (show_add_pins * DEBUG_ADD_PINS) | (show_add_tracks * DEBUG_ADD_TRACKS);
 }
 
 void GridLees::getLocalPos(Coord &c) {
@@ -160,6 +163,13 @@ void GridLees::addLayer(int start_coord, unsigned int num_steps, unsigned int st
 
 	layer.size = layer.width * layer.length;
 	layer.grid = new Cell[layer.size];
+
+	if (debug_mode_ | DEBUG_ADD_TRACKS) {
+		std::cout << "Adding " << (layer.is_horizontal?"X":"Y") << " Track:";
+		std::cout << "\n\tStart Coordinate: " << layer.start_coord;
+		std::cout << "\n\tNumber of Steps: " << layer.num_steps;
+		std::cout << "\n\tStride: " << layer.stride << "\n";
+	}
 
 	for (int i = 0; i < layer.size; ++i) {
 		layer.grid[i] = CELL_EMPTY;
@@ -559,6 +569,20 @@ void GridLees::printGrid() {
 		std::cout << "--------------------\n";
 	}
 	std::cout << "====================\n";
+}
+
+void GridLees::addBlockArea(Coord min_coord, Coord max_coord) {
+	std::cout << "Adding a block area\n";
+	getLocalPos(min_coord);
+	getLocalPos(max_coord);
+
+	for (int z = min_coord.z; z <= max_coord.z; ++z) {
+		for (int y = min_coord.y_nearest; y <= max_coord.y_nearest; ++y) {
+			for (int x = min_coord.x_nearest; x <= max_coord.x_nearest; ++x) {
+				getGrid(x, y, z) = CELL_BLOCK;
+			}
+		}
+	}
 }
 
 void GridLees::printPaths() {
