@@ -66,6 +66,36 @@ bool Parser::parseLEF()
 					
 					
 				}
+				else if(first.compare("OBS")==0)
+				{
+					string cur_layer;
+					while(getline(in,line))
+					{
+						stringstream ss5(line);
+						ss5>>first;
+						
+						if(first.compare("LAYER")==0)
+						{
+							ss5>>cur_layer;
+						}
+						else if(first.compare("END")==0)
+							break;
+						else
+						{
+							Obstacle obs;
+							obs.layer=cur_layer;
+							string xx1, xx2, yy1, yy2;
+							ss5 >> xx1 >> yy1 >> xx2 >> yy2;
+							obs.x1 = stod(xx1);
+							obs.x2 = stod(xx2);
+							obs.y1 = stod(yy1);
+							obs.y2 = stod(yy2);
+							if(cur_layer[0]=='m')
+							obs_list[cur].push_back(obs);
+							
+						}
+					}
+				}
 				else if (first.compare("END") == 0 && pin != "")
 				{
 					pin = "";
@@ -91,13 +121,11 @@ void Parser::parseDEF()
 {
 	d.parse(def_file);
 }
-
-bool Parser::write_output(string outfile){
+void Parser::write_output(string outfile){
 	d.write(outfile);
-	return true;
 }
 
-void Parser::print(){
+void Parser::printLEF(){
 	cout << "\n\n-------------------------SIZES--------------------\n";
 	for (auto it : gates_size)
 	{
@@ -110,6 +138,11 @@ void Parser::print(){
 		for (auto it2 : it.second)
 		{
 			cout << "Pin " << it2.pin << " x1=" << it2.x1 << " y1=" << it2.y1 << " x2=" << it2.x2 << " y2=" << it2.y2 << endl;
+		}
+		cout<< "Obstacles:" <<endl;
+		for (auto obs : obs_list[it.first])
+		{
+			cout <<obs.layer << " x1=" << obs.x1 << " y1=" << obs.y1 << " x2=" << obs.x2 << " y2=" << obs.y2 << endl;
 		}
 		cout << endl;
 	}

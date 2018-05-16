@@ -12,6 +12,11 @@ struct Rect{
 	string pin;
 	float x1, x2, y1, y2;
 };
+
+struct Obstacle{
+	string layer;
+	float x1, x2, y1, y2;
+};
 class Parser
 {
 public:
@@ -19,11 +24,12 @@ public:
 	~Parser();
     bool parseLEF();
     void parseDEF();
-    bool write_output(string outfile);
-    void print();
+    void write_output(string outfile);
+    void printLEF();
 
     map<string, pair<float, float> > gates_size;
     map<string, vector<Rect> > gates_pins;
+    map<string, vector<Obstacle> > obs_list;
     string lef_file,def_file;
     Def d;
 };
