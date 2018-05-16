@@ -273,7 +273,7 @@ bool GridLees::calculatePath(unsigned int wire_id) {
 	int y = end_.y_nearest;
 	int z = end_.z;
 	
-    int min = INT32_MAX;
+    int min = INT_MAX;
     while (true) {
         int xmin = x;
 		int ymin = y;
