@@ -82,7 +82,6 @@ void gridmaker(Parser p){
 	for (auto block : absolute_obstacles)
 	{
 		int layer = int(block.layer[5]-'0') - 1;
-		cout << "Layer " << layer << endl;
 		grid.addBlockArea(Coord(block.x1, block.y1, layer), Coord(block.x2, block.y2, layer));
 	}
 	for(auto np:net_pins)
@@ -136,7 +135,7 @@ int main(int argc, char *argv[]) {
 #if 1
 
 	string lef_path = "Files/osu035.lef";
-	string def_path = "Files/rca4.def";
+	string def_path = "Files/mux4x1.def";
 
 	if (argc > 1) {
 		def_path = argv[1];
@@ -155,7 +154,6 @@ int main(int argc, char *argv[]) {
 	p.parseDEF();
 
 	gridmaker(p);
-	system("pause");
 
 #else
 	GridLees grid(0, 0, 50, 50, 2);

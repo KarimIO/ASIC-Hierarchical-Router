@@ -40,7 +40,8 @@ GridLees::GridLees(int die_x0, int die_y0, int die_x1, int die_y1, unsigned int 
 
 void GridLees::setBlockers(unsigned int size, Coord *c) {
 	for (int i = 0; i < size; ++i) {
-		getGrid(c[i].x, c[i].y, c[i].z) = CELL_BLOCK;
+		getLocalPos(c[i]);
+		getGrid(c[i].x_nearest, c[i].y_nearest, c[i].z) = CELL_BLOCK;
 	}
 }
 
@@ -136,6 +137,21 @@ void GridLees::addPath(Path p) {
 		std::cout << "Pin End " << paths_.size() << ": " << v.end.print() << " -> (" << v.end.x_nearest << ", " << v.end.y_nearest << ")\n";
 	}
 
+	// Add Blockers under pins
+	for (int i = 0; i < v.start.z; ++i) {
+		Coord e = v.start;
+		e.z = i;
+		getLocalPos(e);
+		getGrid(e.x_nearest, e.y_nearest, e.z) = CELL_BLOCK;
+	}
+
+	for (int i = 0; i < v.end.z; ++i) {
+		Coord e = v.end;
+		e.z = i;
+		getLocalPos(e);
+		getGrid(e.x_nearest, e.y_nearest, e.z) = CELL_BLOCK;
+	}
+
 	getGrid(v.start.x_nearest, v.start.y_nearest, v.start.z) = CELL_PIN;
 	getGrid(v.end.x_nearest, v.end.y_nearest, v.end.z) = CELL_PIN;
 }
@@ -197,7 +213,7 @@ SimulateStatus GridLees::simulateStep() {
 					visiting_.emplace(id.x - 1, id.y, id.z, v);
 					getGrid(id.x - 1, id.y, id.z) = v;
 				}
-				else if (end_.z == id.z && end_.y == id.y && end_.x == id.x - 1) {
+				else if (end_.z == id.z && end_.y_nearest == id.y && end_.x_nearest == id.x - 1) {
 					return STATUS_SUCCESS;
 				}
 			}
@@ -242,7 +258,7 @@ SimulateStatus GridLees::simulateStep() {
 					visiting_.emplace(x, y, id.z - 1, v);
 					getGrid(x, y, id.z - 1) = v;
 				}
-				else if (end_.z == id.z - 1 && end_.y == y && end_.x == x) {
+				else if (end_.z == id.z - 1 && end_.y_nearest == y && end_.x_nearest == x) {
 					return STATUS_SUCCESS;
 				}
 			}
@@ -256,7 +272,7 @@ SimulateStatus GridLees::simulateStep() {
 					visiting_.emplace(x, y, id.z + 1, v);
 					getGrid(x, y, id.z + 1) = v;
 				}
-				else if (end_.z == id.z + 1 && end_.y == y && end_.x == x) {
+				else if (end_.z == id.z + 1 && end_.y_nearest == y && end_.x_nearest == x) {
 					return STATUS_SUCCESS;
 				}
 			}
@@ -342,6 +358,10 @@ bool GridLees::calculatePath(unsigned int wire_id) {
         }
 
 		getGrid(xmin, ymin, zmin) = wireToCell(wire_id);
+
+		if (xmin == x && ymin == y && zmin == z) {
+			return false;
+		}
 
         x = xmin;
 		y = ymin;
@@ -572,7 +592,7 @@ void GridLees::printGrid() {
 }
 
 void GridLees::addBlockArea(Coord min_coord, Coord max_coord) {
-	std::cout << "Adding a block area\n";
+
 	getLocalPos(min_coord);
 	getLocalPos(max_coord);
 
