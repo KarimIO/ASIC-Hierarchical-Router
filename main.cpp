@@ -2,50 +2,41 @@
 #include <sstream>
 #include <vector>
 #include "GridLees.h"
-#include "Def.h"
+#include "Parser.h"
 
 using namespace std;
-struct Rect{
-	string pin;
-	float x1, x2, y1, y2;
-};
-map<string, pair<float, float> > gates_size;
-map<string, vector<Rect> > gates_pins;
 
-void print();
-bool extractLEF(string lef_file);
-
-void gridmaker(Def d){
+void gridmaker(Parser p){
 	//sanity check
-	int x1 = d.diearea_x1;
-	int y1 = d.diearea_y1;
-	int x2 = d.diearea_x2;
-	int y2 = d.diearea_y2;
-	int xsize = (x2-x1)/10;
-	int ysize = (y2-y1)/10;
-	// cout<<xsize<<" "<<ysize<<endl;
+	int x1 = p.d.diearea_x1;
+	int y1 = p.d.diearea_y1;
+	int x2 = p.d.diearea_x2;
+	int y2 = p.d.diearea_y2;
+	int xsize = (x2-x1);
+	int ysize = (y2-y1);
+	cout<<xsize<<" "<<ysize<<endl;
 	int pinx1,pinx2,piny1,piny2;
 	int gatew,gateh;
     int pinX,pinY;
-	GridLees grid(x1, y1, x2, y2, d.tracklist.size());
-	DefPin p = d.pinlist[0];
+	GridLees grid(x1, y1, x2, y2, p.d.tracklist.size());
+	DefPin pin = p.d.pinlist[0];
 	//cout<<p.placed_pos[0]<<endl;
-	DefNet n = d.netlist[0];
+	DefNet n = p.d.netlist[0];
 	DefComponent c;
 	//cout<<n.gate_to_pin<<endl;
-	for (int t = 0; t < d.tracklist.size(); ++t) {
-		Tracks track = d.tracklist[t];
+	for (int t = 0; t < p.d.tracklist.size(); ++t) {
+		Tracks track = p.d.tracklist[t];
 		grid.addLayer(stoi(track.pos), stoi(track._do), stoi(track.step), track.name == "X");
 	}
 	
 	map<string,string> name_to_gate;
 	map<string, vector<pair<int,int> > > net_pins;
 	map<string,pair<int,int> >  gate_origin;
-	for(auto c:d.complist){
+	for(auto c:p.d.complist){
 		name_to_gate[c.name]=c.gate;
-		gate_origin[c.name]=make_pair(c.x/10,c.y/10);
+		gate_origin[c.name]=make_pair(c.x,c.y);
 	}
-	for(auto net:d.netlist)
+	for(auto net:p.d.netlist)
 	{
 		vector<pair<int,int> > vp;
 		net_pins[net.name]=vp;
@@ -54,14 +45,14 @@ void gridmaker(Def d){
 			string gname = name_to_gate[g.first];
 			int x=gate_origin[g.first].first;
 			int y=gate_origin[g.first].second;
-			for(auto it2: gates_pins[gname])
+			for(auto it2: p.gates_pins[gname])
 			{
 				if(it2.pin.compare(g.second)==0)
 				{
-					pinx1 = it2.x1*10;
-					piny1 = it2.y1*10;
-					pinx2 = it2.x2*10;
-					piny2 = it2.y2*10;
+					pinx1 = it2.x1*100;
+					piny1 = it2.y1*100;
+					pinx2 = it2.x2*100;
+					piny2 = it2.y2*100;
 					pinX = pinx1+pinx2 / 2; 
 					pinY = piny1+piny2 / 2;
 					net_pins[net.name].push_back(make_pair(pinX+x,pinY+y));
@@ -76,7 +67,7 @@ void gridmaker(Def d){
 	{
 		for(int i=0;i<np.second.size()-1;i++)
 		{
-			//cout<<np.second[i].first<<" "<<np.second[i].second<<"\t"<<np.second[i+1].first<<" "<<np.second[i+1].second<<endl;
+			cout<<np.second[i].first<<" "<<np.second[i].second<<"\t"<<np.second[i+1].first<<" "<<np.second[i+1].second<<endl;
 			grid.addPath(Path(Coord(np.second[i].first,np.second[i].second, 0), Coord(np.second[i+1].first,np.second[i+1].second, 0)));
 
 		}
@@ -117,183 +108,51 @@ void gridmaker(Def d){
 	
 }
 
-bool Parse(std::string path)
-{
-	//Extract Def file add more info output to test.def
-	Def d;
-	d.parse(path);
 
-	/*Tracks t;
-	t.name = "test";
-	t.pos = "444";
-	t._do = "100";
-	t.step = "50";
-	t.layer = "test_metal";
-	d.tracklist.push_back(t);
-
-	DefPin tp;
-	tp.name = "test_pin";
-	tp.layer = "test_metal"; 
-	tp.orientation="FN";
-	tp.placed_pos[0] = tp.placed_pos[1] = tp.layer_pos[0] = tp.layer_pos[1] = tp.layer_pos[2] = tp.layer_pos[3]= 100;
-	d.pinlist.push_back(tp);
-
-	DefComponent tc;
-	tc.name = "test_gate_1";
-	tc.gate = "test_gate";
-	tc.orientation = "FS";
-	tc.y = tc.x = 200;
-	d.complist.push_back(tc);
-
-	DefNet tn;
-	tn.name = "tst_net";
-	Routed tr;
-	tr.layer = "tst_layer";
-	tr.dest_layer = "M5_tst";
-	tr.fst = 1;
-	tr.xys.push_back(make_pair("*", "*"));
-	tn.routes.push_back(tr);
-	tn.gate_to_pin.push_back(make_pair("tst_gate", "A"));
-	d.netlist.push_back(tn);
-*/
-	//d.write("Files/test.def");
-
-	//get the gates width and heigh from the lef file
-	if (!extractLEF("Files/osu035.lef")){
-		cerr << "Couldn' get info from lef file\n";
-	}
-	//print();
-	
-	gridmaker(d);
-	return 0;
-}
-
-bool extractLEF(string lef_file)
-{
-	ifstream in;
-	in.open(lef_file);
-	if (!in.is_open())
-	{
-		cerr << "Couldn't find/open the lef file\n";
-		return false;
-	}
-	string line, first, tmp, cur;
-	bool flag = 0; // 0 no gates yet, 1gate
-	string pin = "";
-	while (getline(in, line))
-	{
-		stringstream ss(line);
-		ss >> first;
-		if (first == "MACRO")
-		{
-			ss >> cur;
-			while (getline(in, line))
-			{
-				stringstream ss(line);
-				ss >> first;
-				if (first.compare("SIZE") == 0)
-				{
-					double w, h;
-					ss >> tmp;
-					w = stod(tmp);
-					ss >> tmp;
-					ss >> tmp;
-					h = stod(tmp);
-					gates_size[cur].first = h;
-					gates_size[cur].second = w;
-					
-				}
-				else if (first.compare("PIN") == 0)
-				{
-					ss >> pin;
-					//cout << pin << endl;
-					vector<Rect> v;
-					if(gates_pins.find(cur)==gates_pins.end())gates_pins[cur] = v;
-				}
-				else if (first.compare("RECT") == 0 && pin!="")
-				{
-					string xx1, xx2, yy1, yy2;
-					ss >> xx1 >> yy1 >> xx2 >> yy2;
-					Rect r;
-					r.pin = pin;
-					r.x1 = stod(xx1);
-					r.x2 = stod(xx2);
-					r.y1 = stod(yy1);
-					r.y2 = stod(yy2);
-					gates_pins[cur].push_back(r);
-					
-					
-				}
-				else if (first.compare("END") == 0 && pin != "")
-				{
-					pin = "";
-				}
-				else if (first.compare("END") == 0 )
-				{
-
-					string tmp;
-					ss >> tmp;
-					if (tmp.compare(cur)==0)
-						break;
-				}
-				
-			}
-		}
-		
-	}
-	return true;
-}
-
-void print()
-{
-	cout << "\n\n-------------------------SIZES--------------------\n";
-	for (auto it : gates_size)
-	{
-		cout << "Gate: " << it.first << " w=" << it.second.first << " h=" << it.second.second << endl;
-	}
-	cout << "\n\n-------------------------PINS--------------------\n";
-	for (auto it : gates_pins)
-	{
-		cout << "Gate: " << it.first << endl;
-		for (auto it2 : it.second)
-		{
-			cout << "Pin " << it2.pin << " x1=" << it2.x1 << " y1=" << it2.y1 << " x2=" << it2.x2 << " y2=" << it2.y2 << endl;
-		}
-		cout << endl;
-	}
-}
 
 int main(int argc, char *argv[]) {
 	
-	GridLees grid(0, 0, 50, 50, 2);
-
-	grid.setDebugMode(true, true, true);
-
-	grid.addLayer(0, 11, 5, false);
-	grid.addLayer(0, 6, 10, true);
-
-	grid.addPath(Path(Coord(0, 0, 0), Coord(50, 50, 1)));
-	grid.addPath(Path(Coord(25, 0, 0), Coord(15, 25, 0)));
-	grid.addPath(Path(Coord(20, 0, 0), Coord(20, 50, 0)));
-	grid.addPath(Path(Coord(20, 0, 1), Coord(20, 50, 1)));
-	grid.addPath(Path(Coord(50, 10, 0), Coord(50, 49, 0)));
-
-    if (grid.route()) {
-    	std::cout << "Successfully routed.\n";
-		grid.printPaths();
+	string lef_path = "Files/osu035.lef";
+	string def_path = "Files/simple_pic_unroute.def";
+	Parser p(def_path,lef_path);
+	if(!p.parseLEF())
+	{
+		cerr<<"Error parsing LEF\n";
+		exit(1);
 	}
-	else {
-		std::cout << "Failed to find routes.\n";
-	}
+	p.parseDEF();
+
+	gridmaker(p);
+
+	// GridLees grid(0, 0, 50, 50, 2);
+
+	// grid.setDebugMode(true, true, true);
+
+	// grid.addLayer(0, 11, 5, false);
+	// grid.addLayer(0, 6, 10, true);
+
+	// grid.addPath(Path(Coord(0, 0, 0), Coord(50, 50, 1)));
+	// grid.addPath(Path(Coord(25, 0, 0), Coord(15, 25, 0)));
+	// grid.addPath(Path(Coord(20, 0, 0), Coord(20, 50, 0)));
+	// grid.addPath(Path(Coord(20, 0, 1), Coord(20, 50, 1)));
+	// grid.addPath(Path(Coord(50, 10, 0), Coord(50, 49, 0)));
+
+    // if (grid.route()) {
+    // 	std::cout << "Successfully routed.\n";
+	// 	grid.printPaths();
+	// }
+	// else {
+	// 	std::cout << "Failed to find routes.\n";
+	// }
 	
 
-	std::string path;
-	if (argc > 1)
-		path = argv[1];
-	else
-		path = "Files/rca4.def";
+	// std::string path;
+	// if (argc > 1)
+	// 	path = argv[1];
+	// else
+	// 	path = "Files/rca4.def";
 
-	// Parse(path);
+	// // Parse(path);
 
 #ifdef _WIN32
 	system("pause");

@@ -1,10 +1,10 @@
 cmake_minimum_required (VERSION 2.6)
 project (Router)
 
-set(PARSER_SOURCES DefComponent.cpp Def.cpp DefNet.cpp DefPin.cpp Routed.cpp Tracks.cpp)
+set(PARSER_SOURCES Parser.cpp DefComponent.cpp Def.cpp DefNet.cpp DefPin.cpp Routed.cpp Tracks.cpp)
 source_group("Parser\\Source Files" FILES ${PARSER_SOURCES})
 
-set(PARSER_HEADERS DefComponent.h Def.h DefNet.h DefPin.h Routed.h Tracks.h)
+set(PARSER_HEADERS Parser.h DefComponent.h Def.h DefNet.h DefPin.h Routed.h Tracks.h)
 source_group("Parser\\Header Files" FILES ${PARSER_HEADERS})
 
 set(ROUTER_SOURCES GridLees.cpp)
