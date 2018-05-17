@@ -57,8 +57,8 @@ void gridmaker(Parser p){
 					piny1 = it2.y1*DEF_FACTOR;
 					pinx2 = it2.x2*DEF_FACTOR;
 					piny2 = it2.y2*DEF_FACTOR;
-					pinX = pinx1+pinx2 / 2; 
-					pinY = piny1+piny2 / 2;
+					pinX = (pinx1+pinx2) / 2; 
+					pinY = (piny1+piny2) / 2;
 					net_pins[net.name].push_back(make_pair(pinX+x,pinY+y));
 					
 					// cout<<net.name<<" "<<g.second<<" "<<pinX+x<<" " <<pinY+y<<endl;
@@ -135,7 +135,7 @@ int main(int argc, char *argv[]) {
 #if 1
 
 	string lef_path = "Files/osu035.lef";
-	string def_path = "Files/mux4x1.def";
+	string def_path = "Files/rca4.def";
 
 	if (argc > 1) {
 		def_path = argv[1];
