@@ -58,7 +58,7 @@ void gridmaker(Parser p){
 				int x = gate_origin[g.first].first + x1;
 				int y = gate_origin[g.first].second + y1;
 				//cout<<"GATE_POS: "<<x<<" "<<y<<endl<<endl;
-				cout << net.name << " " << g.first << endl;
+				//cout << net.name << " " << g.first << endl;
 				for (auto it2 : p.gates_pins[gname])
 				{
 					if (it2.pin.compare(g.second) == 0)
