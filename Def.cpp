@@ -143,19 +143,22 @@ void Def::parse(string file)
 		}
 	}
 }
-void Def::write(string file)
+
+bool Def::write(string file)
 {
 	ofstream out(file);
 	if (out.is_open() == false)
 	{
-		cerr << "couldn't open " << file << "\n";
+		cerr << "Couldn't open " << file << "\n";
 		exit(1);
-		return;
+		return false;
 	}
 	out << output();
 	out.close();
-	cout << "DONE WRITING\n";
+
+	return true;
 }
+
 string Def::output()
 {
 	string out;

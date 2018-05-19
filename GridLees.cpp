@@ -796,6 +796,7 @@ std::vector<OutputPath> GridLees::getPaths() {
 			// Get accurate start position
 			start.x = x;
 			start.y = y;
+			start.z = z;
 			getGlobalPos(start);
 			outsegment.startx = start.x;
 			outsegment.starty = start.y;
@@ -828,6 +829,7 @@ std::vector<OutputPath> GridLees::getPaths() {
 			// Get accurate end path
 			end.x = x;
 			end.y = y;
+			end.z = z;
 			getGlobalPos(end);
 			outsegment.endx = end.x;
 			outsegment.endy = end.y;
@@ -865,7 +867,8 @@ std::vector<OutputPath> GridLees::getPaths() {
 
 			//std::cout << "Moved to " << x << ", " << y << ", " << z << "\n";
 
-			outpath.paths.push_back(outsegment);
+			if (findingpath)
+				outpath.paths.push_back(outsegment);
 
 			if (x == finalpos.x_nearest && y == finalpos.y_nearest && z == finalpos.z) {
 				break;

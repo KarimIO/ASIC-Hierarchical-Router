@@ -8,3 +8,4 @@ CMakeFiles
 router
 .vs
 Debug
+*_routed.def

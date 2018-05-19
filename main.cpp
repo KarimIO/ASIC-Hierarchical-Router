@@ -120,7 +120,6 @@ void gridmaker(Parser p){
 	}
     
 	grid.route();
-	grid.getPaths();
 
 	vector<OutputPath> out_paths = grid.getPaths();
 	cout << "SIZE of PATHS " << out_paths.size() << endl;
@@ -153,8 +152,13 @@ void gridmaker(Parser p){
 			cout << "Pushing route: " << temp_r.output() << endl;
 		}
 	}
-	p.d.write("testing_out.def");
-	cout << "Done Writing\n";
+
+	int ext_end = p.def_file.find_last_of(".");
+	std::string new_file = p.def_file.substr(0, ext_end - 1) + "_routed.def";
+	
+	if (p.d.write(new_file.c_str()))
+		cout << "Done Writing to: " << new_file << "\n";
+
 	// for (auto it : gates_size)
 	// {
 	// 	cout << "Gate: " << it.first << " w=" << it.second.first << " h=" << it.second.second << endl;
@@ -189,7 +193,7 @@ int main(int argc, char *argv[]) {
 #if 1
 
 	string lef_path = "Files/osu035.lef";
-	string def_path = "Files/mux4x1.def";
+	string def_path = "Files/rca4.def";
 
 	if (argc > 1) {
 		def_path = argv[1];

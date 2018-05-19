@@ -16,7 +16,7 @@ public:
 	Def(); 
 	void parse(string file);
 	string output();
-	void write(string file);
+	bool write(string file);
 	~Def();
 
 	vector<DefNet> netlist, speciallist;
