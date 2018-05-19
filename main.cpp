@@ -32,53 +32,74 @@ void gridmaker(Parser p){
 	}
 	
 	map<string,string> name_to_gate;
-	map<string, vector<pair<int,int> > > net_pins;
+	map<string, vector<pair<int,pair<int,int> > > > net_pins; //layer, x, y
 	map<string,pair<int,int> >  gate_origin;
 	vector<Obstacle> absolute_obstacles;
+	float total_area = 0;
 	for(auto c:p.d.complist){
 		name_to_gate[c.name]=c.gate;
 		gate_origin[c.name]=make_pair(c.x,c.y);
+		total_area += (DEF_FACTOR*DEF_FACTOR*p.gates_size[c.gate].first*p.gates_size[c.gate].second);
+	}
+	float die_area_total = xsize*ysize;
+	cout << "TOTAL_AREA= " << total_area << "  DIE_AREA: " << die_area_total << " CORE_UTIL: " <<total_area/die_area_total << endl;
+	map<string, DefPin> add_pin_location;
+	for (auto pp : p.d.pinlist)
+	{
+		add_pin_location[pp.name] = pp;
 	}
 	for(auto net:p.d.netlist)
 	{
-		vector<pair<int,int> > vp;
-		net_pins[net.name]=vp;
 		for(auto g:net.gate_to_pin)
 		{
-			string gname = name_to_gate[g.first];
-			int x=gate_origin[g.first].first+x1;
-			int y=gate_origin[g.first].second+y1;
-			//cout<<"GATE_POS: "<<x<<" "<<y<<endl<<endl;
-			for(auto it2: p.gates_pins[gname])
+			if (g.first.compare("PIN") != 0)
 			{
-				if(it2.pin.compare(g.second)==0)
+				string gname = name_to_gate[g.first];
+				int x = gate_origin[g.first].first + x1;
+				int y = gate_origin[g.first].second + y1;
+				//cout<<"GATE_POS: "<<x<<" "<<y<<endl<<endl;
+				//cout << net.name << " " << g.first << endl;
+				for (auto it2 : p.gates_pins[gname])
 				{
-					pinx1 = it2.x1*DEF_FACTOR;
-					piny1 = it2.y1*DEF_FACTOR;
-					pinx2 = it2.x2*DEF_FACTOR;
-					piny2 = it2.y2*DEF_FACTOR;
-					pinX = pinx1+pinx2 / 2; 
-					pinY = piny1+piny2 / 2;
-					net_pins[net.name].push_back(make_pair(pinX+x,pinY+y));
-					
-					// cout<<net.name<<" "<<g.second<<" "<<pinX+x<<" " <<pinY+y<<endl;
-					break;
+					if (it2.pin.compare(g.second) == 0)
+					{
+						pinx1 = it2.x1*DEF_FACTOR;
+						piny1 = it2.y1*DEF_FACTOR;
+						pinx2 = it2.x2*DEF_FACTOR;
+						piny2 = it2.y2*DEF_FACTOR;
+						pinX = (pinx1 + pinx2) / 2;
+						pinY = (piny1 + piny2) / 2;
+						net_pins[net.name].push_back(make_pair(0,make_pair(pinX + x, pinY + y)));
+
+						// cout<<net.name<<" "<<g.second<<" "<<pinX+x<<" " <<pinY+y<<endl;
+						break;
+					}
+				}
+				for (auto it2 : p.obs_list[gname])
+				{
+					Obstacle obs = it2;
+					obs.x1 = (obs.x1*DEF_FACTOR) + x;
+					obs.x2 = (obs.x2*DEF_FACTOR) + x;
+					obs.y1 = (obs.y1*DEF_FACTOR) + y;
+					obs.y2 = (obs.y2*DEF_FACTOR) + y;
+					absolute_obstacles.push_back(obs);
+					//cout<<it2.x1<<" "<<it2.y1<<" "<<it2.x2<<" "<<it2.y2<<endl;
+					//cout<<"AFTER: "<<obs.x1<<" "<<obs.y1<<" "<<obs.x2<<" "<<obs.y2<<endl;
 				}
 			}
-			for(auto it2: p.obs_list[gname])
+			else
 			{
-				Obstacle obs=it2;
-				obs.x1=(obs.x1*DEF_FACTOR)+x;
-				obs.x2=(obs.x2*DEF_FACTOR)+x;
-				obs.y1=(obs.y1*DEF_FACTOR)+y;
-				obs.y2=(obs.y2*DEF_FACTOR)+y;
-				absolute_obstacles.push_back(obs);
-				//cout<<it2.x1<<" "<<it2.y1<<" "<<it2.x2<<" "<<it2.y2<<endl;
-				//cout<<"AFTER: "<<obs.x1<<" "<<obs.y1<<" "<<obs.x2<<" "<<obs.y2<<endl;
+				int layer = (add_pin_location[g.second].layer[5] - '0') - 1;
+				pinX = add_pin_location[g.second].placed_pos[0];
+				pinY = add_pin_location[g.second].placed_pos[1];
+				net_pins[net.name].push_back(make_pair(layer, make_pair(pinX, pinY)) );
 			}
+			
 		}
 	}
+	cout << endl;
 
+	
 	for (auto block : absolute_obstacles)
 	{
 		int layer = int(block.layer[5]-'0') - 1;
@@ -89,11 +110,10 @@ void gridmaker(Parser p){
 		for(int i=0;i<np.second.size()-1;i++)
 		{
 			//cout<<np.second[i].first<<" "<<np.second[i].second<<"\t"<<np.second[i+1].first<<" "<<np.second[i+1].second<<endl;
-			grid.addPath(Path(Coord(np.second[i].first,np.second[i].second, 0), Coord(np.second[i+1].first,np.second[i+1].second, 0)));
+			grid.addPath(Path(Coord(np.second[i].second.first, np.second[i].second.second, np.second[i].first), Coord(np.second[i + 1].second.first, np.second[i + 1].second.second, np.second[i + 1].first)));
 
 		}
 	}
-
     if (grid.route()) {
     	std::cout << "Successfully routed.\n";
 	}

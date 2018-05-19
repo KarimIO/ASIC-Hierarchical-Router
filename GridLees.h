@@ -100,6 +100,10 @@ private:
 
 	void clearRoute(unsigned int wire);
 	void rip(unsigned int wire);
+
+	void printArea(Coord start_p, Coord end_p);
+
+	unsigned int heuristicClose(unsigned int id);
 	unsigned int heuristicSlope(unsigned int id);
 
 	Cell &getGrid(unsigned int x, unsigned int y, unsigned int z);

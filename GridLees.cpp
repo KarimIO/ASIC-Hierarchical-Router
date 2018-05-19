@@ -5,8 +5,12 @@
 #include <iomanip>
 #include <algorithm>
 #include <cmath>
+<<<<<<< HEAD
 #include <climits>
 #include <vector>
+=======
+#include <chrono>
+>>>>>>> 60d9fdae62b9ceee3e366965d20c8113d7e9c34f
 
 const bool DEBUG_PATH = false;
 double path_size;
@@ -412,6 +416,12 @@ double length(Path &i) {
 	return sqrt(x * x + y * y);
 }
 
+double length(int x1, int y1, int x2, int y2) {
+	double x = x2 - x1;
+	double y = y2 - y1;
+	return sqrt(x * x + y * y);
+}
+
 double getPathValue(Path &i) {
 	return length(i);
 }
@@ -425,16 +435,39 @@ double slope(Path &p) {
 }
 
 unsigned int GridLees::heuristicSlope(unsigned int id) {
-    double a = slope(paths_[id]);
-    double b = 0;
+	double a = slope(paths_[id]);
+	double b = 0;
 
-    unsigned int min_slope_id = 0;
-    
-    for (int i = 1; i < paths_.size(); ++i) {
-        double b = slope(paths_[i]);
-    }
+	unsigned int min_slope_id = 0;
+	double min_slope_diff = 0;
 
-    return min_slope_id;
+	for (int i = 1; i < paths_.size(); ++i) {
+		double b = slope(paths_[i]);
+		double diff = a - b;
+	}
+
+	return min_slope_id;
+}
+
+unsigned int GridLees::heuristicClose(unsigned int id) {
+	Coord a = paths_[id].start;
+	Coord c = paths_[id].end;
+	double min = INFINITY;
+	unsigned int min_id = 0;
+
+	for (int i = 0; i < paths_.size(); ++i) {
+		if (i != id) {
+			Coord b = paths_[i].start;
+			Coord d = paths_[i].end;
+			double diff = (length(a.x, a.y, b.x, b.y) + length(c.x, c.y, d.x, d.y)) / 2;
+			if (diff < min) {
+				min = diff;
+				min_id = i;
+			}
+		}
+	}
+
+	return min_id;
 }
 
 void GridLees::sortPaths() {
@@ -472,7 +505,7 @@ bool GridLees::routeWire(unsigned int wire_id) {
     if (status == STATUS_FAILED) {
         std::cout << "Could not find path to end!\n";
 		getGrid(start_.x_nearest, start_.y_nearest, start_.z) = CELL_PIN;
-
+		printArea(start_, end_);
         clear();
 
         return false;
@@ -482,6 +515,7 @@ bool GridLees::routeWire(unsigned int wire_id) {
 			getGrid(start_.x_nearest, start_.y_nearest, start_.z) = CELL_PIN;
 			if (debug_mode_ & DEBUG_MID_PATHS)
 					printPath(wire_id);
+			clear();
             return false;
         }
 
@@ -492,7 +526,7 @@ bool GridLees::routeWire(unsigned int wire_id) {
 
 	getGrid(start_.x_nearest, start_.y_nearest, start_.z) = CELL_PIN;
 
-    clearQueue(visiting_);
+    //clearQueue(visiting_);
     clear();
 
     return true;
@@ -504,7 +538,80 @@ void GridLees::rip(unsigned int wire) {
     paths_.push_back(p);
 }
 
+void GridLees::printArea(Coord min_coord, Coord max_coord) {
+	return;
+	std::cout << "Printing Area from:\n";
+	std::cout << "\t" << min_coord.print() << "\n";
+	std::cout << "\t" << max_coord.print() << "\n";
+
+	for (int z = 0; z < depth_; ++z) {
+		std::cout << min_coord.x << ", " << min_coord.y << " - " << max_coord.x << ", " << max_coord.y << "\n";
+		Coord min = min_coord;
+		min.z = z;
+		getLocalPos(min);
+		Coord max = max_coord;
+		max.z = z;
+		getLocalPos(max);
+		int x1 = min.x_nearest;
+		int x2 = max.x_nearest;
+		int y1 = min.y_nearest;
+		int y2 = max.y_nearest;
+
+		if (x1 > x2) {
+			int t = x1;
+			x1 = x2;
+			x2 = t;
+		}
+
+		if (y1 > y2) {
+			int t = y1;
+			y1 = y2;
+			y2 = t;
+		}
+
+		int mx = layers_[z].width - 1;
+		int my = layers_[z].length - 1;
+		x1 = (x1 - 10 < 0) ? 0 : x1 - 10;
+		x2 = (x2 + 10 > mx) ? mx : x2 + 10;
+		y1 = (y1 - 10 < 0) ? 0 : y1 - 10;
+		y2 = (y2 + 10 > my) ? my : y2 + 10;
+
+		std::cout << x1 << ", " << y1 << " - " << x2 << ", " << y2 << "\n";
+
+		for (int y = y1; y <= y2; ++y) {
+			for (int x = x1; x <= x2; ++x) {
+				std::string str;
+				Cell val = getGrid(x, y, z);
+				
+				if (val == CELL_PIN) {
+					str = "pppp";
+				}
+				else if (val == CELL_EMPTY) {
+					str = "____";
+				}
+				else if (val == CELL_BLOCK) {
+					str = "####";
+				}
+				else if (val <= CELL_BASE_WIRE_BLOCK) {
+					int fix_val = CELL_BASE_WIRE_BLOCK - val;
+					fix_val = paths_[fix_val].id;
+					str = "w" + std::to_string(fix_val);
+				}
+				else {
+					str = std::to_string(val);
+				}
+
+				std::cout << std::setw(4) << str << " ";
+			}
+			std::cout << "\n";
+		}
+		std::cout << "-------\n";
+	}
+}
+
 bool GridLees::route() {
+	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+	
 	bool finished = false;
 	bool status;
 
@@ -520,10 +627,15 @@ bool GridLees::route() {
         // If not routed it successfully
         if (!status) {
             if (i < 1) {
+				std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+				unsigned long time = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
+				std::cout << "Failed after " << time << " seconds.";
+
                 return false;
             }
 
-            unsigned int id = heuristicSlope(i);
+			unsigned int id = heuristicSlope(i);
+			//heuristicSlope(i);
             rip(id);
             std::cout << "Failed; Ripping path: " << paths_[id].print() << "\n";
 
@@ -535,6 +647,10 @@ bool GridLees::route() {
             i -= 2;
         }
 	}
+
+	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+	unsigned long time = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
+	std::cout << "Completed " << time << " seconds.";
 
     return true;
 }
@@ -593,6 +709,7 @@ void GridLees::printGrid() {
 }
 
 void GridLees::addBlockArea(Coord min_coord, Coord max_coord) {
+	return;
 
 	getLocalPos(min_coord);
 	getLocalPos(max_coord);
