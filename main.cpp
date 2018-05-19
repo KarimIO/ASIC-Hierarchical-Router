@@ -211,7 +211,7 @@ void gridmaker(unsigned int track_multiplier, Parser p){
 				temp_r.fst = true;
 			}
 			p.d.netlist[path_to_net[i]].routes.push_back(temp_r);
-			std::cout << "Pushing route: " << temp_r.output() << endl;
+			//std::cout << "Pushing route: " << temp_r.output() << endl;
 		}
 	}
 
