@@ -83,7 +83,7 @@ void gridmaker(unsigned int track_multiplier, Parser p){
 						string orient = gate_orientation[g.first];
 
 						//cout << "BEFORE PINX " << pinX << "   PINY " << pinY << endl;
-						if ( orient == "FS")
+						if (orient == "FS")
 						{
 							pinX += x;
 							pinY = (gate_h - pinY) + y;
@@ -91,7 +91,7 @@ void gridmaker(unsigned int track_multiplier, Parser p){
 						else if (orient == "FN")
 						{
 							pinY += y;
-							pinX = (gate_w - pinX)+x;
+							pinX = (gate_w - pinX) + x;
 						}
 						else if (orient == "N")
 						{
@@ -103,10 +103,34 @@ void gridmaker(unsigned int track_multiplier, Parser p){
 							pinX = (gate_w - pinX) + x;
 							pinY = (gate_h - pinY) + y;
 						}
+						else if (orient == "E")
+						{
+							int tmp = pinX;
+							pinX = pinY+y;
+							pinY = (gate_w - pinX) + x;
+						}
+						else if (orient == "W")
+						{
+							int tmp = pinX;
+							pinX = (gate_h - pinY) + y;
+							pinY = tmp + x;
+						}
+						else if (orient == "FW")
+						{
+							int tmp = pinX;
+							pinX = pinY + y;
+							pinY = tmp + x;
+						}
+						else if (orient == "FE")
+						{
+							int tmp = pinX;
+							pinX = (gate_h - pinY) + y;
+							pinY = (gate_w - tmp) + x;
+						}
 						else
 						{
-							std::cout << "UNHANDLED ORIENTATION\n";
-							// cout<<net.name<<" "<<g.second<<" "<<pinX+x<<" " <<pinY+y<<endl;
+							cout << "UNKNOW ORIENTATION";
+							exit(-1);
 						}
 						//cout <<orient<<" PINX " << pinX << "   PINY " << pinY << endl;
 						net_pins[net.name].push_back(make_pair(0, make_pair(pinX, pinY)));
