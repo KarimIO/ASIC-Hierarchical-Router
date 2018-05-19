@@ -453,15 +453,13 @@ unsigned int GridLees::heuristicClose(unsigned int id) {
 	double min = INFINITY;
 	unsigned int min_id = 0;
 
-	for (int i = 0; i < paths_.size(); ++i) {
-		if (i != id) {
-			Coord b = paths_[i].start;
-			Coord d = paths_[i].end;
-			double diff = (length(a.x, a.y, b.x, b.y) + length(c.x, c.y, d.x, d.y)) / 2;
-			if (diff < min) {
-				min = diff;
-				min_id = i;
-			}
+	for (int i = 0; i < id; ++i) {
+		Coord b = paths_[i].start;
+		Coord d = paths_[i].end;
+		double diff = (length(a.x, a.y, b.x, b.y) + length(c.x, c.y, d.x, d.y)) / 2;
+		if (diff < min) {
+			min = diff;
+			min_id = i;
 		}
 	}
 
@@ -503,7 +501,6 @@ bool GridLees::routeWire(unsigned int wire_id) {
     if (status == STATUS_FAILED) {
         std::cout << "Could not find path to end!\n";
 		getGrid(start_.x_nearest, start_.y_nearest, start_.z) = CELL_PIN;
-		printArea(start_, end_);
         clear();
 
         return false;
@@ -618,21 +615,21 @@ bool GridLees::route() {
 
     // Try Routing
     for (int i = 0; i < paths_.size(); ++i) {
-        std::cout << "Attempting to route: (" << 100.0f * float(i)/float(paths_.size()) << "%) " << paths_[i].print() << "\n";
+        std::cout << "Attempting to route " << (i+1) << ": (" << 100.0f * float(i)/float(paths_.size()) << "%) " << paths_[i].print() << "\n";
         // Try to route the wire
         status = routeWire(i);
 
         // If not routed it successfully
         if (!status) {
-            //if (i < 1) {
+            if (i < 1) {
 				std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 				unsigned long time = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
 				std::cout << "Failed after " << time << " seconds.\n";
 
                 return false;
-            //}
+            }
 
-			unsigned int id = heuristicSlope(i);
+			unsigned int id = heuristicClose(i);
 			//heuristicSlope(i);
             rip(id);
             std::cout << "Failed; Ripping path: " << paths_[id].print() << "\n";
