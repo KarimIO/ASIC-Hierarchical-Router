@@ -15,7 +15,7 @@ void gridmaker(Parser p){
 	int y2 = p.d.diearea_y2;
 	int xsize = (x2-x1);
 	int ysize = (y2-y1);
-	cout << "Die Area: " << xsize << " " << ysize << endl;
+	std::cout << "Die Area: " << xsize << " " << ysize << endl;
 	int pinx1,pinx2,piny1,piny2;
 	int gatew,gateh;
     int pinX,pinY;
@@ -44,7 +44,7 @@ void gridmaker(Parser p){
 		total_area += (DEF_FACTOR*DEF_FACTOR*p.gates_size[c.gate].first*p.gates_size[c.gate].second);
 	}
 	float die_area_total = xsize*ysize;
-	cout << "TOTAL_AREA= " << total_area << "  DIE_AREA: " << die_area_total << " CORE_UTIL: " <<total_area/die_area_total << endl;
+	std::cout << "TOTAL_AREA= " << total_area << "  DIE_AREA: " << die_area_total << " CORE_UTIL: " <<total_area/die_area_total << endl;
 	map<string, DefPin> add_pin_location;
 	for (auto pp : p.d.pinlist)
 	{
@@ -59,9 +59,9 @@ void gridmaker(Parser p){
 				string gname = name_to_gate[g.first];
 				int x = gate_origin[g.first].first+x1;
 				int y = gate_origin[g.first].second+y1;
-				int gate_w = p.gates_size[gname].first*DEF_FACTOR;
-				int gate_h = p.gates_size[gname].second*DEF_FACTOR;
-				cout << "Gate h , w  " << gate_h << " " << gate_w << endl;
+				int gate_w = p.gates_size[gname].second*DEF_FACTOR;
+				int gate_h = p.gates_size[gname].first*DEF_FACTOR;
+				std::cout << "Gate h , w  " << gate_h << " " << gate_w << endl;
 				//cout<<"GATE_POS: "<<x<<" "<<y<<endl<<endl;
 				//cout << net.name << " " << g.first << endl;
 				for (auto it2 : p.gates_pins[gname])
@@ -75,15 +75,17 @@ void gridmaker(Parser p){
 						pinX = (pinx1 + pinx2) / 2;
 						pinY = (piny1 + piny2) / 2;
 						string orient = gate_orientation[g.first];
+
+						cout << "BEFORE PINX " << pinX << "   PINY " << pinY << endl;
 						if ( orient == "FS")
 						{
 							pinX += x;
-							pinY = (gate_h - y) + pinY;
+							pinY = (gate_h - pinY) + y;
 						}
 						else if (orient == "FN")
 						{
 							pinY += y;
-							pinX = (gate_w - x)+pinX;
+							pinX = (gate_w - pinX)+x;
 						}
 						else if (orient == "N")
 						{
@@ -92,14 +94,15 @@ void gridmaker(Parser p){
 						}
 						else if (orient == "S")
 						{
-							pinX = (gate_w - x) + pinX;
-							pinY = (gate_h - y) + pinY;
+							pinX = (gate_w - pinX) + x;
+							pinY = (gate_h - pinY) + y;
 						}
 						else
 						{
 							std::cout << "UNHANDLED ORIENTATION\n";
 							// cout<<net.name<<" "<<g.second<<" "<<pinX+x<<" " <<pinY+y<<endl;
 						}
+						cout <<orient<<" PINX " << pinX << "   PINY " << pinY << endl;
 						net_pins[net.name].push_back(make_pair(0, make_pair(pinX, pinY)));
 						break;
 					}
@@ -126,7 +129,7 @@ void gridmaker(Parser p){
 			
 		}
 	}
-	cout << endl;
+	std::cout << endl;
 
 	
 	for (auto block : absolute_obstacles)
@@ -151,7 +154,7 @@ void gridmaker(Parser p){
 	grid.route();
 
 	vector<OutputPath> out_paths = grid.getPaths();
-	cout << "SIZE of PATHS " << out_paths.size() << endl;
+	std::cout << "SIZE of PATHS " << out_paths.size() << endl;
 	bool start;
 	int prev = -1;
 	for (int i = 0; i < out_paths.size(); i++) {
@@ -170,7 +173,7 @@ void gridmaker(Parser p){
 				else
 					temp_r.dest_layer = "M" + to_string(temp_seg.layer+1) + "_M" + to_string(temp_seg.layer);
 			}
-			cout << temp_seg.startx << " " << temp_seg.endx << " " << temp_seg.starty << " " << temp_seg.endy << endl;
+			std::cout << temp_seg.startx << " " << temp_seg.endx << " " << temp_seg.starty << " " << temp_seg.endy << endl;
 			temp_r.xys.push_back(make_pair(to_string(temp_seg.startx), to_string(temp_seg.starty)));
 			temp_r.xys.push_back(make_pair(to_string(temp_seg.endx), to_string(temp_seg.endy)));
 			if (start)
@@ -178,7 +181,7 @@ void gridmaker(Parser p){
 				temp_r.fst = true;
 			}
 			p.d.netlist[path_to_net[i]].routes.push_back(temp_r);
-			cout << "Pushing route: " << temp_r.output() << endl;
+			std::cout << "Pushing route: " << temp_r.output() << endl;
 		}
 	}
 
@@ -186,7 +189,7 @@ void gridmaker(Parser p){
 	std::string new_file = p.def_file.substr(0, ext_end - 1) + "_routed.def";
 	
 	if (p.d.write(new_file.c_str()))
-		cout << "Done Writing to: " << new_file << "\n";
+		std::cout << "Done Writing to: " << new_file << "\n";
 
 	// for (auto it : gates_size)
 	// {
