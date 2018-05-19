@@ -8,6 +8,12 @@ using namespace std;
 const int DEF_FACTOR = 100;
 
 void gridmaker(unsigned int track_multiplier, Parser p){
+	//add track multiplier 
+	for (int k = 0; k < p.d.tracklist.size();k++)
+	{
+		p.d.tracklist[k].step = to_string(stoi(p.d.tracklist[k].step) / track_multiplier);
+		p.d.tracklist[k]._do = to_string(stoi(p.d.tracklist[k]._do)*track_multiplier);
+	}
 	//sanity check
 	int x1 = p.d.diearea_x1;
 	int y1 = p.d.diearea_y1;
@@ -61,7 +67,7 @@ void gridmaker(unsigned int track_multiplier, Parser p){
 				int y = gate_origin[g.first].second+y1;
 				int gate_w = p.gates_size[gname].second*DEF_FACTOR;
 				int gate_h = p.gates_size[gname].first*DEF_FACTOR;
-				std::cout << "Gate h , w  " << gate_h << " " << gate_w << endl;
+				//std::cout << "Gate h , w  " << gate_h << " " << gate_w << endl;
 				//cout<<"GATE_POS: "<<x<<" "<<y<<endl<<endl;
 				//cout << net.name << " " << g.first << endl;
 				for (auto it2 : p.gates_pins[gname])
@@ -76,7 +82,7 @@ void gridmaker(unsigned int track_multiplier, Parser p){
 						pinY = (piny1 + piny2) / 2;
 						string orient = gate_orientation[g.first];
 
-						cout << "BEFORE PINX " << pinX << "   PINY " << pinY << endl;
+						//cout << "BEFORE PINX " << pinX << "   PINY " << pinY << endl;
 						if ( orient == "FS")
 						{
 							pinX += x;
@@ -102,7 +108,7 @@ void gridmaker(unsigned int track_multiplier, Parser p){
 							std::cout << "UNHANDLED ORIENTATION\n";
 							// cout<<net.name<<" "<<g.second<<" "<<pinX+x<<" " <<pinY+y<<endl;
 						}
-						cout <<orient<<" PINX " << pinX << "   PINY " << pinY << endl;
+						//cout <<orient<<" PINX " << pinX << "   PINY " << pinY << endl;
 						net_pins[net.name].push_back(make_pair(0, make_pair(pinX, pinY)));
 						break;
 					}
@@ -154,7 +160,7 @@ void gridmaker(unsigned int track_multiplier, Parser p){
 	grid.route();
 
 	vector<OutputPath> out_paths = grid.getPaths();
-	std::cout << "SIZE of PATHS " << out_paths.size() << endl;
+	//std::cout << "SIZE of PATHS " << out_paths.size() << endl;
 	bool start;
 	int prev = -1;
 	for (int i = 0; i < out_paths.size(); i++) {
@@ -186,7 +192,7 @@ void gridmaker(unsigned int track_multiplier, Parser p){
 	}
 
 	int ext_end = p.def_file.find_last_of(".");
-	std::string new_file = p.def_file.substr(0, ext_end - 1) + "_routed.def";
+	std::string new_file = p.def_file.substr(0, ext_end) + "_routed.def";
 	
 	if (p.d.write(new_file.c_str()))
 		std::cout << "Done Writing to: " << new_file << "\n";
