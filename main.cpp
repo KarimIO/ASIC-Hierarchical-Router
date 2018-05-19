@@ -142,6 +142,7 @@ void gridmaker(Parser p){
 				else
 					temp_r.dest_layer = "M" + to_string(temp_seg.layer+1) + "_M" + to_string(temp_seg.layer);
 			}
+			cout << temp_seg.startx << " " << temp_seg.endx << " " << temp_seg.starty << " " << temp_seg.endy << endl;
 			temp_r.xys.push_back(make_pair(to_string(temp_seg.startx), to_string(temp_seg.starty)));
 			temp_r.xys.push_back(make_pair(to_string(temp_seg.endx), to_string(temp_seg.endy)));
 			if (start)
