@@ -146,9 +146,9 @@ void gridmaker(Parser p){
 			cout << "Pushing route: " << temp_r.output() << endl;
 		}
 	}
-
 	p.d.write("testing_out.def");
-	cout << "Done Writing\n";
+	cout << "done writing\n";
+	
 	// for (auto it : gates_size)
 	// {
 	// 	cout << "Gate: " << it.first << " w=" << it.second.first << " h=" << it.second.second << endl;
