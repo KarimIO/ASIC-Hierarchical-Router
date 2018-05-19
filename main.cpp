@@ -105,14 +105,18 @@ void gridmaker(Parser p){
 		int layer = int(block.layer[5]-'0') - 1;
 		grid.addBlockArea(Coord(block.x1, block.y1, layer), Coord(block.x2, block.y2, layer));
 	}
+	int net_num = 0, path_num=0;
+	map<int, int> path_to_net;
 	for(auto np:net_pins)
 	{
 		for(int i=0;i<np.second.size()-1;i++)
 		{
 			//cout<<np.second[i].first<<" "<<np.second[i].second<<"\t"<<np.second[i+1].first<<" "<<np.second[i+1].second<<endl;
 			grid.addPath(Path(Coord(np.second[i].second.first, np.second[i].second.second, np.second[i].first), Coord(np.second[i + 1].second.first, np.second[i + 1].second.second, np.second[i + 1].first)));
-
+			path_to_net[path_num] = net_num;
+			path_num++;
 		}
+		net_num++;
 	}
     
 	grid.route();
@@ -121,19 +125,22 @@ void gridmaker(Parser p){
 	vector<OutputPath> out_paths = grid.getPaths();
 	cout << "SIZE of PATHS " << out_paths.size() << endl;
 	bool start;
+	int prev = -1;
 	for (int i = 0; i < out_paths.size(); i++) {
-		start = true;
+		
 		for (int k = 0; k < out_paths[i].paths.size(); k++) {
 			Routed temp_r;
+			start = prev != path_to_net[i];
+			prev = path_to_net[i];
 			OutputSegment temp_seg = out_paths[i].paths[k];
 			temp_r.layer = "metal" + to_string(temp_seg.layer);
 			temp_r.special = temp_r.fst = false;
 			if (temp_seg.zdir != NoZ)
 			{
 				if (temp_seg.zdir == Out)
-					temp_r.dest_layer = "M" + to_string(temp_seg.layer + 1) + "_M" + to_string(temp_seg.layer);
+					temp_r.dest_layer = "M" + to_string(temp_seg.layer + 2) + "_M" + to_string(temp_seg.layer+1);
 				else
-					temp_r.dest_layer = "M" + to_string(temp_seg.layer) + "_M" + to_string(temp_seg.layer - 1);
+					temp_r.dest_layer = "M" + to_string(temp_seg.layer) + "_M" + to_string(temp_seg.layer);
 			}
 			temp_r.xys.push_back(make_pair(to_string(temp_seg.startx), to_string(temp_seg.starty)));
 			temp_r.xys.push_back(make_pair(to_string(temp_seg.endx), to_string(temp_seg.endy)));
@@ -141,14 +148,12 @@ void gridmaker(Parser p){
 			{
 				temp_r.fst = true;
 			}
-			start = false;
-			p.d.netlist[i].routes.push_back(temp_r);
+			p.d.netlist[path_to_net[i]].routes.push_back(temp_r);
 			cout << "Pushing route: " << temp_r.output() << endl;
 		}
 	}
 	p.d.write("testing_out.def");
-	cout << "done writing\n";
-	
+	cout << "Done Writing\n";
 	// for (auto it : gates_size)
 	// {
 	// 	cout << "Gate: " << it.first << " w=" << it.second.first << " h=" << it.second.second << endl;
