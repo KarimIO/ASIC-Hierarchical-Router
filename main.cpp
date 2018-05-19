@@ -121,7 +121,38 @@ void gridmaker(Parser p){
 	else {
 		std::cout << "Failed to find routes.\n";
 	}
-
+	vector<OutputPath> out_paths = grid.getPaths();
+	cout << "SIZE of PATHS " << out_paths.size() << endl;
+	bool start;
+	for (int i = 0; i < out_paths.size(); i++)
+	{
+		start = true;
+		for (int k = 0; k < out_paths[i].paths.size(); k++)
+		{
+			Routed temp_r;
+			OutputSegment temp_seg = out_paths[i].paths[k];
+			temp_r.layer = "metal"+ to_string(temp_seg.layer);
+			temp_r.special = temp_r.fst = false;
+			if (temp_seg.zdir != NoZ)
+			{
+				if (temp_seg.zdir == Out)
+					temp_r.dest_layer = "M" + to_string(temp_seg.layer + 1) + "_M" + to_string(temp_seg.layer);
+				else
+					temp_r.dest_layer = "M" + to_string(temp_seg.layer) + "_M" + to_string(temp_seg.layer-1);
+			}
+			temp_r.xys.push_back(make_pair(to_string(temp_seg.startx), to_string(temp_seg.starty)));
+			temp_r.xys.push_back(make_pair(to_string(temp_seg.endx), to_string(temp_seg.endy)));
+			if (start)
+			{
+				temp_r.fst = true;
+			}
+			start = false;
+			p.d.netlist[i].routes.push_back(temp_r);
+			cout << "pushing route: " << temp_r.output() << endl;;
+		}
+	}
+	p.d.write("testing_out.def");
+	cout << "done writing\n";
 	// for (auto it : gates_size)
 	// {
 	// 	cout << "Gate: " << it.first << " w=" << it.second.first << " h=" << it.second.second << endl;
@@ -153,7 +184,7 @@ void gridmaker(Parser p){
 
 int main(int argc, char *argv[]) {
 
-#if 0
+#if 1
 
 	string lef_path = "Files/osu035.lef";
 	string def_path = "Files/mux4x1.def";
