@@ -7,7 +7,7 @@
 using namespace std;
 const int DEF_FACTOR = 100;
 
-void gridmaker(Parser p){
+void gridmaker(unsigned int track_multiplier, Parser p){
 	//sanity check
 	int x1 = p.d.diearea_x1;
 	int y1 = p.d.diearea_y1;
@@ -28,7 +28,7 @@ void gridmaker(Parser p){
 	//cout<<n.gate_to_pin<<endl;
 	for (int t = 0; t < p.d.tracklist.size(); ++t) {
 		Tracks track = p.d.tracklist[t];
-		grid.addLayer(stoi(track.pos), stoi(track._do), stoi(track.step), track.name == "X");
+		grid.addLayer(stoi(track.pos), stoi(track._do) * track_multiplier, stoi(track.step) / track_multiplier, track.name == "X");
 	}
 	
 	map<string,string> name_to_gate;
@@ -223,7 +223,7 @@ void gridmaker(Parser p){
 int main(int argc, char *argv[]) {
 
 #if 1
-
+	unsigned int track_multiplier;
 	string lef_path = "Files/osu035.lef";
 	string def_path = "Files/mux4x1.def";
 
@@ -235,6 +235,9 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+	std::cout << "Please enter a multipler: ";
+	std::cin >> track_multiplier;
+
 	Parser p(def_path,lef_path);
 	if(!p.parseLEF()) {
 		cerr << "Error parsing LEF\n";
@@ -243,7 +246,7 @@ int main(int argc, char *argv[]) {
 
 	p.parseDEF();
 
-	gridmaker(p);
+	gridmaker(track_multiplier, p);
 
 #else
 	GridLees grid(0, 0, 50, 50, 2);
