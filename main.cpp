@@ -34,11 +34,13 @@ void gridmaker(Parser p){
 	map<string,string> name_to_gate;
 	map<string, vector<pair<int,pair<int,int> > > > net_pins; //layer, x, y
 	map<string,pair<int,int> >  gate_origin;
+	map<string, string> gate_orientation;
 	vector<Obstacle> absolute_obstacles;
 	float total_area = 0;
 	for(auto c:p.d.complist){
 		name_to_gate[c.name]=c.gate;
 		gate_origin[c.name]=make_pair(c.x,c.y);
+		gate_orientation[c.name] = c.orientation;
 		total_area += (DEF_FACTOR*DEF_FACTOR*p.gates_size[c.gate].first*p.gates_size[c.gate].second);
 	}
 	float die_area_total = xsize*ysize;
@@ -55,8 +57,11 @@ void gridmaker(Parser p){
 			if (g.first.compare("PIN") != 0)
 			{
 				string gname = name_to_gate[g.first];
-				int x = gate_origin[g.first].first + x1;
-				int y = gate_origin[g.first].second + y1;
+				int x = gate_origin[g.first].first+x1;
+				int y = gate_origin[g.first].second+y1;
+				int gate_w = p.gates_size[gname].first*DEF_FACTOR;
+				int gate_h = p.gates_size[gname].second*DEF_FACTOR;
+				cout << "Gate h , w  " << gate_h << " " << gate_w << endl;
 				//cout<<"GATE_POS: "<<x<<" "<<y<<endl<<endl;
 				//cout << net.name << " " << g.first << endl;
 				for (auto it2 : p.gates_pins[gname])
@@ -69,9 +74,33 @@ void gridmaker(Parser p){
 						piny2 = it2.y2*DEF_FACTOR;
 						pinX = (pinx1 + pinx2) / 2;
 						pinY = (piny1 + piny2) / 2;
-						net_pins[net.name].push_back(make_pair(0,make_pair(pinX + x, pinY + y)));
-
-						// cout<<net.name<<" "<<g.second<<" "<<pinX+x<<" " <<pinY+y<<endl;
+						string orient = gate_orientation[g.first];
+						if ( orient == "FS")
+						{
+							pinX += x;
+							pinY = (gate_h - y) + pinY;
+						}
+						else if (orient == "FN")
+						{
+							pinY += y;
+							pinX = (gate_w - x)+pinX;
+						}
+						else if (orient == "N")
+						{
+							pinX += x;
+							pinY += y;
+						}
+						else if (orient == "S")
+						{
+							pinX = (gate_w - x) + pinX;
+							pinY = (gate_h - y) + pinY;
+						}
+						else
+						{
+							std::cout << "UNHANDLED ORIENTATION\n";
+							// cout<<net.name<<" "<<g.second<<" "<<pinX+x<<" " <<pinY+y<<endl;
+						}
+						net_pins[net.name].push_back(make_pair(0, make_pair(pinX, pinY)));
 						break;
 					}
 				}
@@ -193,7 +222,7 @@ int main(int argc, char *argv[]) {
 #if 1
 
 	string lef_path = "Files/osu035.lef";
-	string def_path = "Files/rca4.def";
+	string def_path = "Files/mux4x1.def";
 
 	if (argc > 1) {
 		def_path = argv[1];
