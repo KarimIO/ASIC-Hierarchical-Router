@@ -624,13 +624,13 @@ bool GridLees::route() {
 
         // If not routed it successfully
         if (!status) {
-            if (i < 1) {
+            //if (i < 1) {
 				std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 				unsigned long time = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
-				std::cout << "Failed after " << time << " seconds.";
+				std::cout << "Failed after " << time << " seconds.\n";
 
                 return false;
-            }
+            //}
 
 			unsigned int id = heuristicSlope(i);
 			//heuristicSlope(i);
@@ -648,7 +648,7 @@ bool GridLees::route() {
 
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 	unsigned long time = std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
-	std::cout << "Completed " << time << " seconds.";
+	std::cout << "Success after " << time << " seconds.\n";
 
     return true;
 }
@@ -786,8 +786,10 @@ std::vector<OutputPath> GridLees::getPaths() {
 
 		Layer &l = layers_[z];
 
+		bool findingpath = true;
 		// ...trace from start to end.
-		while (true) {
+		while (findingpath) {
+			findingpath = false;
 			OutputSegment outsegment;
 			outsegment.layer = z;
 
@@ -802,20 +804,24 @@ std::vector<OutputPath> GridLees::getPaths() {
 				while (x > 0 && getGrid(x - 1, y, z) == wire_id) {
 					getGrid(x - 1, y, z) = CELL_BLOCK;
 					--x;
+					findingpath = true;
 				}
 				while (x < width_ - 1 && getGrid(x + 1, y, z) == wire_id) {
 					getGrid(x + 1, y, z) = CELL_BLOCK;
 					++x;
+					findingpath = true;
 				}
 			}
 			else {
 				while (y > 0 && getGrid(x, y - 1, z) == wire_id) {
 					getGrid(x, y - 1, z) = CELL_BLOCK;
 					--y;
+					findingpath = true;
 				}
 				while (y < length_ - 1 && getGrid(x, y + 1, z) == wire_id) {
 					getGrid(x, y + 1, z) = CELL_BLOCK;
 					++y;
+					findingpath = true;
 				}
 			}
 
@@ -837,6 +843,7 @@ std::vector<OutputPath> GridLees::getPaths() {
 						y = new_y;
 						--z;
 						outsegment.zdir = In;
+						findingpath = true;
 					}
 				}
 			}
@@ -851,6 +858,7 @@ std::vector<OutputPath> GridLees::getPaths() {
 						y = new_y;
 						++z;
 						outsegment.zdir = Out;
+						findingpath = true;
 					}
 				}
 			}
