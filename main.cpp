@@ -220,7 +220,18 @@ int main(int argc, char *argv[]) {
 	grid.addBlockArea(Coord(15, 15, 0), Coord(20, 20, 0));
     if (grid.route()) {
     	std::cout << "Successfully routed.\n";
-		grid.getPaths();
+		std::vector<OutputPath> p = grid.getPaths();
+		for (int i = 0; i < p.size(); ++i) {
+			std::cout << "Path #" << i + 1 << "\n";
+			for (int j = 0; j < p[i].paths.size(); ++j) {
+				OutputSegment &s = p[i].paths[j];
+				int newlayer = (s.zdir == NoZ) ? s.layer : (s.zdir == In) ? (s.layer - 1) : (s.layer + 1);
+				std::cout << "\Layer: " << s.layer << "\n";
+				std::cout << "\tFrom: " << s.startx << ", " << s.starty << "\n";
+				std::cout << "\tTo: " << s.endx << ", " << s.endy << "\n";
+				std::cout << "\tTo layer: " << newlayer << "\n";
+			}
+		}
 	}
 	else {
 	 	std::cout << "Failed to find routes.\n";

@@ -766,7 +766,7 @@ GridLees::~GridLees() {
 // Get List of Paths
 std::vector<OutputPath> GridLees::getPaths() {
 	std::vector<OutputPath> paths;
-	paths.reserve(paths_.size());
+	paths.resize(paths_.size());
 
 	// For every path
 	for (int p = 0; p < paths_.size(); ++p) { // paths_.size()
@@ -799,21 +799,21 @@ std::vector<OutputPath> GridLees::getPaths() {
 			outsegment.starty = start.y;
 
 			if (layers_[z].is_horizontal) {
-				if (x > 0 && getGrid(x - 1, y, z) == wire_id) {
+				while (x > 0 && getGrid(x - 1, y, z) == wire_id) {
 					getGrid(x - 1, y, z) = CELL_BLOCK;
 					--x;
 				}
-				else if (x < width_ - 1 && getGrid(x + 1, y, z) == wire_id) {
+				while (x < width_ - 1 && getGrid(x + 1, y, z) == wire_id) {
 					getGrid(x + 1, y, z) = CELL_BLOCK;
 					++x;
 				}
 			}
 			else {
-				if (y > 0 && getGrid(x, y - 1, z) == wire_id) {
+				while (y > 0 && getGrid(x, y - 1, z) == wire_id) {
 					getGrid(x, y - 1, z) = CELL_BLOCK;
 					--y;
 				}
-				else if (y < length_ - 1 && getGrid(x, y + 1, z) == wire_id) {
+				while (y < length_ - 1 && getGrid(x, y + 1, z) == wire_id) {
 					getGrid(x, y + 1, z) = CELL_BLOCK;
 					++y;
 				}
@@ -857,15 +857,14 @@ std::vector<OutputPath> GridLees::getPaths() {
 
 			//std::cout << "Moved to " << x << ", " << y << ", " << z << "\n";
 
+			outpath.paths.push_back(outsegment);
+
 			if (x == finalpos.x_nearest && y == finalpos.y_nearest && z == finalpos.z) {
-				std::cout << "Found path " << (p + 1) << "\n";
 				break;
 			}
-
-			outpath.paths.push_back(outsegment);
 		}
 
-		paths.push_back(outpath);
+		paths[paths_[p].id] = outpath;
 	}
 
 	return paths;
