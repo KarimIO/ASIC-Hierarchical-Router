@@ -184,7 +184,7 @@ void gridmaker(unsigned int track_multiplier, Parser p){
 	grid.route();
 
 	vector<OutputPath> out_paths = grid.getPaths();
-	//std::cout << "SIZE of PATHS " << out_paths.size() << endl;
+	std::cout << "SIZE of PATHS " << out_paths.size() << endl;
 	bool start;
 	int prev = -1;
 	for (int i = 0; i < out_paths.size(); i++) {
@@ -203,7 +203,7 @@ void gridmaker(unsigned int track_multiplier, Parser p){
 				else
 					temp_r.dest_layer = "M" + to_string(temp_seg.layer+1) + "_M" + to_string(temp_seg.layer);
 			}
-			std::cout << temp_seg.startx << " " << temp_seg.endx << " " << temp_seg.starty << " " << temp_seg.endy << endl;
+			//std::cout << temp_seg.startx << " " << temp_seg.endx << " " << temp_seg.starty << " " << temp_seg.endy << endl;
 			temp_r.xys.push_back(make_pair(to_string(temp_seg.startx), to_string(temp_seg.starty)));
 			temp_r.xys.push_back(make_pair(to_string(temp_seg.endx), to_string(temp_seg.endy)));
 			if (start)
@@ -255,7 +255,7 @@ int main(int argc, char *argv[]) {
 #if 1
 	unsigned int track_multiplier;
 	string lef_path = "Files/osu035.lef";
-	string def_path = "Files/mux4x1.def";
+	string def_path = "Files/simple_pic_unroute.def";
 
 	if (argc > 1) {
 		def_path = argv[1];
