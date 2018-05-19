@@ -765,11 +765,12 @@ GridLees::~GridLees() {
 
 // Get List of Paths
 std::vector<OutputPath> GridLees::getPaths() {
-	std::vector<OutputPath> path;
-	path.reserve(paths_.size());
+	std::vector<OutputPath> paths;
+	paths.reserve(paths_.size());
 
 	// For every path
 	for (int p = 0; p < paths_.size(); ++p) { // paths_.size()
+		OutputPath outpath;
 		// Get the path ID
 		int wire_id = wireToCell(p);
 
@@ -787,14 +788,15 @@ std::vector<OutputPath> GridLees::getPaths() {
 
 		// ...trace from start to end.
 		while (true) {
-			OutputPath outpath;
+			OutputSegment outsegment;
+			outsegment.layer = z;
 
 			// Get accurate start position
 			start.x = x;
 			start.y = y;
 			getGlobalPos(start);
-			outpath.startx = start.x;
-			outpath.starty = start.y;
+			outsegment.startx = start.x;
+			outsegment.starty = start.y;
 
 			if (layers_[z].is_horizontal) {
 				if (x > 0 && getGrid(x - 1, y, z) == wire_id) {
@@ -821,10 +823,10 @@ std::vector<OutputPath> GridLees::getPaths() {
 			end.x = x;
 			end.y = y;
 			getGlobalPos(end);
-			outpath.endx = end.x;
-			outpath.endy = end.y;
+			outsegment.endx = end.x;
+			outsegment.endy = end.y;
 
-			outpath.zdir = NoZ;
+			outsegment.zdir = NoZ;
 			if (z > 0) {
 				unsigned int new_x;
 				unsigned int new_y;
@@ -834,12 +836,12 @@ std::vector<OutputPath> GridLees::getPaths() {
 						x = new_x;
 						y = new_y;
 						--z;
-						outpath.zdir = In;
+						outsegment.zdir = In;
 					}
 				}
 			}
 
-			if (outpath.zdir == NoZ && z < depth_ - 1) {
+			if (outsegment.zdir == NoZ && z < depth_ - 1) {
 				unsigned int new_x;
 				unsigned int new_y;
 				if (canGoToLayer(x, y, z, z + 1, new_x, new_y)) {
@@ -848,7 +850,7 @@ std::vector<OutputPath> GridLees::getPaths() {
 						x = new_x;
 						y = new_y;
 						++z;
-						outpath.zdir = Out;
+						outsegment.zdir = Out;
 					}
 				}
 			}
@@ -859,10 +861,14 @@ std::vector<OutputPath> GridLees::getPaths() {
 				std::cout << "Found path " << (p + 1) << "\n";
 				break;
 			}
+
+			outpath.paths.push_back(outsegment);
 		}
+
+		paths.push_back(outpath);
 	}
 
-	return path;
+	return paths;
 }
 
 

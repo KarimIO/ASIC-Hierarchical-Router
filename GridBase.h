@@ -56,12 +56,17 @@ enum LayerDirection {
 	Out
 };
 
-struct OutputPath {
+struct OutputSegment {
 	int layer;
 	LayerDirection zdir;
 	int startx, starty;
 	int endx, endy;
 };
+
+struct OutputPath {
+	std::vector<OutputSegment> paths;
+};
+
 
 enum SimulateStatus {
 	STATUS_UNFINISHED = 0,
