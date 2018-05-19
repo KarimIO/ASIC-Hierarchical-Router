@@ -1,0 +1,4 @@
+wires in final grid are presented by negative values (starting from -4)
+get wire function
+output datastructure for john 
+end to end pins to a path 

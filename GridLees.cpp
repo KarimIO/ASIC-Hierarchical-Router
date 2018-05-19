@@ -5,10 +5,11 @@
 #include <iomanip>
 #include <algorithm>
 #include <cmath>
+#include <climits>
+#include <vector>
 
 const bool DEBUG_PATH = false;
 double path_size;
-
 GridLees::CellID::CellID() {
 	this->x = 0;
 	this->y = 0;
@@ -374,7 +375,7 @@ bool GridLees::calculatePath(unsigned int wire_id) {
 
 void GridLees::printPath(unsigned int wire_id) {
     wire_id = wireToCell(wire_id);
-
+	std::cout<<wire_id<<std::endl;
     for (int i = 0; i < depth_; ++i) {
 		Layer &l = layers_[i];
 		for (int j = 0; j < l.length; ++j) {
@@ -606,7 +607,7 @@ void GridLees::addBlockArea(Coord min_coord, Coord max_coord) {
 }
 
 void GridLees::printPaths() {
-	std::string val;
+	std::string val,lastval;
 	for (int i = 0; i < depth_; ++i) {
 		Layer &l = layers_[i];
 		for (int j = 0; j < l.length; ++j) {
@@ -622,9 +623,13 @@ void GridLees::printPaths() {
 					val = "p";
 				}
 				else if (v <= CELL_BASE_WIRE_BLOCK) {
+					
 					int fix_val = CELL_BASE_WIRE_BLOCK - v;
 					fix_val = paths_[fix_val].id;
 					val = std::to_string(fix_val);
+				
+					pathout(i,j,k,val,lastval); //yea cuz im about to pathout
+					val=lastval;
 				}
 				else {
 					val = "?";
@@ -644,3 +649,18 @@ GridLees::~GridLees() {
 			delete[] layers_[i].grid;
 	}
 }
+
+void GridLees::pathout(int layer,int len,int width,std::string val,std::string lastval) {
+	int pos = std::stoi(val);
+	if(val==lastval){ //same wire
+	//not sure how to determine the direction
+	test[pos].push_back(outputPath(layer,0,0,1,'0',width,len));
+
+	} else { //new wire
+	test[pos].push_back(outputPath(layer,0,0,1,'0',width,len));
+
+	}
+
+}
+
+

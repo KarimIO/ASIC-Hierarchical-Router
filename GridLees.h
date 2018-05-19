@@ -3,6 +3,7 @@
 #include <queue>
 #include <string>
 #include "GridBase.h"
+#include <map>
 
 typedef int Cell;
 
@@ -25,6 +26,7 @@ public:
 	void addPath(Path path);
     bool route();
 	void printPaths();
+	void pathout(int layer,int len,int width,std::string val,std::string lastval);
 
 	void addBlockArea(Coord min_coord, Coord max_coord);
 	void addLayer(int start_coord, unsigned int num_steps, unsigned int stride, bool is_horizontal);
@@ -41,7 +43,17 @@ private:
 		Cell *grid;
 	};
 
+	struct outputPath{
+		int layer;
+		bool pin2via,via2pin;
+		int distance;
+		char direction;
+		int startx;
+		int starty;
+	};
+
 	std::vector<Layer> layers_;
+	std::map<std::string,outputPath> test;
 
 	struct CellID {
 		unsigned int x, y, z, dist;
@@ -74,6 +86,7 @@ private:
 	std::queue<CellID> visiting_;
 
 	std::vector<Path> paths_;
+	//std::vector<std::string,std::pair<int,int>> outputpaths;
 
 	bool canGoToLayer(unsigned int from_x, unsigned int from_y, unsigned int from_z, unsigned int to_z, unsigned int &to_x, unsigned int &to_y);
 
