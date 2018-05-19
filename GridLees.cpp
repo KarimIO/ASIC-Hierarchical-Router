@@ -5,12 +5,8 @@
 #include <iomanip>
 #include <algorithm>
 #include <cmath>
-<<<<<<< HEAD
 #include <climits>
-#include <vector>
-=======
 #include <chrono>
->>>>>>> 60d9fdae62b9ceee3e366965d20c8113d7e9c34f
 
 const bool DEBUG_PATH = false;
 double path_size;
@@ -293,6 +289,8 @@ bool GridLees::calculatePath(unsigned int wire_id) {
     int x = end_.x_nearest;
 	int y = end_.y_nearest;
 	int z = end_.z;
+
+	getGrid(x, y, z) = wireToCell(wire_id);
 	
     int min = INT_MAX;
     while (true) {
@@ -357,12 +355,12 @@ bool GridLees::calculatePath(unsigned int wire_id) {
 			}
 		}
 
+		getGrid(xmin, ymin, zmin) = wireToCell(wire_id);
+
         if (min == 0) {
 			finished = true;
             break;
         }
-
-		getGrid(xmin, ymin, zmin) = wireToCell(wire_id);
 
 		if (xmin == x && ymin == y && zmin == z) {
 			return false;
@@ -744,8 +742,6 @@ void GridLees::printPaths() {
 					int fix_val = CELL_BASE_WIRE_BLOCK - v;
 					fix_val = paths_[fix_val].id;
 					val = std::to_string(fix_val);
-				
-					pathout(i,j,k,val,lastval); //yea cuz im about to pathout
 					val=lastval;
 				}
 				else {
@@ -767,17 +763,106 @@ GridLees::~GridLees() {
 	}
 }
 
-void GridLees::pathout(int layer,int len,int width,std::string val,std::string lastval) {
-	int pos = std::stoi(val);
-	if(val==lastval){ //same wire
-	//not sure how to determine the direction
-	test[pos].push_back(outputPath(layer,0,0,1,'0',width,len));
+// Get List of Paths
+std::vector<OutputPath> GridLees::getPaths() {
+	std::vector<OutputPath> path;
+	path.reserve(paths_.size());
 
-	} else { //new wire
-	test[pos].push_back(outputPath(layer,0,0,1,'0',width,len));
+	// For every path
+	for (int p = 0; p < paths_.size(); ++p) { // paths_.size()
+		// Get the path ID
+		int wire_id = wireToCell(p);
 
+		// Get the start and end...
+		Coord start = paths_[p].start;
+		Coord end;
+		Coord finalpos = paths_[p].end;
+
+		int x, y, z;
+		x = start.x_nearest;
+		y = start.y_nearest;
+		z = start.z;
+
+		Layer &l = layers_[z];
+
+		// ...trace from start to end.
+		while (true) {
+			OutputPath outpath;
+
+			// Get accurate start position
+			start.x = x;
+			start.y = y;
+			getGlobalPos(start);
+			outpath.startx = start.x;
+			outpath.starty = start.y;
+
+			if (layers_[z].is_horizontal) {
+				if (x > 0 && getGrid(x - 1, y, z) == wire_id) {
+					getGrid(x - 1, y, z) = CELL_BLOCK;
+					--x;
+				}
+				else if (x < width_ - 1 && getGrid(x + 1, y, z) == wire_id) {
+					getGrid(x + 1, y, z) = CELL_BLOCK;
+					++x;
+				}
+			}
+			else {
+				if (y > 0 && getGrid(x, y - 1, z) == wire_id) {
+					getGrid(x, y - 1, z) = CELL_BLOCK;
+					--y;
+				}
+				else if (y < length_ - 1 && getGrid(x, y + 1, z) == wire_id) {
+					getGrid(x, y + 1, z) = CELL_BLOCK;
+					++y;
+				}
+			}
+
+			// Get accurate end path
+			end.x = x;
+			end.y = y;
+			getGlobalPos(end);
+			outpath.endx = end.x;
+			outpath.endy = end.y;
+
+			outpath.zdir = NoZ;
+			if (z > 0) {
+				unsigned int new_x;
+				unsigned int new_y;
+				if (canGoToLayer(x, y, z, z - 1, new_x, new_y)) {
+					if (getGrid(new_x, new_y, z - 1) == wire_id) {
+						getGrid(new_x, new_y, z - 1) = CELL_BLOCK;
+						x = new_x;
+						y = new_y;
+						--z;
+						outpath.zdir = In;
+					}
+				}
+			}
+
+			if (outpath.zdir == NoZ && z < depth_ - 1) {
+				unsigned int new_x;
+				unsigned int new_y;
+				if (canGoToLayer(x, y, z, z + 1, new_x, new_y)) {
+					if (getGrid(new_x, new_y, z + 1) == wire_id) {
+						getGrid(new_x, new_y, z + 1) = CELL_BLOCK;
+						x = new_x;
+						y = new_y;
+						++z;
+						outpath.zdir = Out;
+					}
+				}
+			}
+
+			//std::cout << "Moved to " << x << ", " << y << ", " << z << "\n";
+
+			if (x == finalpos.x_nearest && y == finalpos.y_nearest && z == finalpos.z) {
+				std::cout << "Found path " << (p + 1) << "\n";
+				break;
+			}
+		}
 	}
 
+	return path;
 }
 
 

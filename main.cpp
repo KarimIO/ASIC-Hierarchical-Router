@@ -115,6 +115,7 @@ void gridmaker(Parser p){
 		}
 	}
     if (grid.route()) {
+		grid.getPaths();
     	std::cout << "Successfully routed.\n";
 	}
 	else {
@@ -152,7 +153,7 @@ void gridmaker(Parser p){
 
 int main(int argc, char *argv[]) {
 
-#if 1
+#if 0
 
 	string lef_path = "Files/osu035.lef";
 	string def_path = "Files/mux4x1.def";
@@ -177,7 +178,7 @@ int main(int argc, char *argv[]) {
 
 #else
 	GridLees grid(0, 0, 50, 50, 2);
-	grid.setDebugMode(true, true, true, false);
+	//grid.setDebugMode(true, true, true, false);
 	grid.addLayer(0, 11, 5, false);
 	grid.addLayer(0, 6, 10, true);
 	grid.addPath(Path(Coord(0, 0, 0), Coord(50, 50, 1)));
@@ -188,7 +189,7 @@ int main(int argc, char *argv[]) {
 	grid.addBlockArea(Coord(15, 15, 0), Coord(20, 20, 0));
     if (grid.route()) {
     	std::cout << "Successfully routed.\n";
-		grid.printPaths();
+		grid.getPaths();
 	}
 	else {
 	 	std::cout << "Failed to find routes.\n";

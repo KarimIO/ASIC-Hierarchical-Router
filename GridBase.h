@@ -50,6 +50,19 @@ struct Path {
 	}
 };
 
+enum LayerDirection {
+	NoZ,
+	In,
+	Out
+};
+
+struct OutputPath {
+	int layer;
+	LayerDirection zdir;
+	int startx, starty;
+	int endx, endy;
+};
+
 enum SimulateStatus {
 	STATUS_UNFINISHED = 0,
 	STATUS_FAILED,
