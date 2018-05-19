@@ -133,14 +133,14 @@ void gridmaker(Parser p){
 			start = prev != path_to_net[i];
 			prev = path_to_net[i];
 			OutputSegment temp_seg = out_paths[i].paths[k];
-			temp_r.layer = "metal" + to_string(temp_seg.layer);
+			temp_r.layer = "metal" + to_string(temp_seg.layer+1);
 			temp_r.special = temp_r.fst = false;
 			if (temp_seg.zdir != NoZ)
 			{
 				if (temp_seg.zdir == Out)
 					temp_r.dest_layer = "M" + to_string(temp_seg.layer + 2) + "_M" + to_string(temp_seg.layer+1);
 				else
-					temp_r.dest_layer = "M" + to_string(temp_seg.layer) + "_M" + to_string(temp_seg.layer);
+					temp_r.dest_layer = "M" + to_string(temp_seg.layer+1) + "_M" + to_string(temp_seg.layer);
 			}
 			temp_r.xys.push_back(make_pair(to_string(temp_seg.startx), to_string(temp_seg.starty)));
 			temp_r.xys.push_back(make_pair(to_string(temp_seg.endx), to_string(temp_seg.endy)));
@@ -188,7 +188,7 @@ int main(int argc, char *argv[]) {
 #if 1
 
 	string lef_path = "Files/osu035.lef";
-	string def_path = "Files/rca4.def";
+	string def_path = "Files/mux4x1.def";
 
 	if (argc > 1) {
 		def_path = argv[1];
